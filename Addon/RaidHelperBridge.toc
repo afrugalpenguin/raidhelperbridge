@@ -7,6 +7,7 @@
 ## SavedVariablesPerCharacter: RaidHelperBridgeCharDB
 
 # Libraries
+Libs\LibStub\LibStub.lua
 Libs\LibDeflate\LibDeflate.lua
 
 # Data

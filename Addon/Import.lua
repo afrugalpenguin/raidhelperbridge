@@ -153,7 +153,7 @@ function addon:ParseImportString(importStr)
     
     -- Decompress
     local json
-    local LibDeflate = _G.LibDeflate
+    local LibDeflate = LibStub and LibStub("LibDeflate", true) or _G.LibDeflate
     if LibDeflate then
         json = LibDeflate:DecompressDeflate(compressed)
     else
