@@ -23,11 +23,9 @@ local MOB_TYPE_CC = {
 
 -- Initialize CC Manager
 function addon:InitCCManager()
-    -- Register for raid target updates
-    addon.frame:RegisterEvent("RAID_TARGET_UPDATE")
-    addon.frame:RegisterEvent("PLAYER_TARGET_CHANGED")
-    addon.frame:RegisterEvent("UPDATE_MOUSEOVER_UNIT")
-    
+    addon:RegisterModuleEvent("RAID_TARGET_UPDATE", OnRaidTargetUpdate)
+    addon:RegisterModuleEvent("PLAYER_TARGET_CHANGED", OnTargetChanged)
+    addon:RegisterModuleEvent("UPDATE_MOUSEOVER_UNIT", OnMouseover)
     addon:Debug("CC Manager initialized")
 end
 
@@ -165,21 +163,6 @@ local function OnMouseover()
     CCManager:CheckUnit("mouseover")
 end
 
--- Hook into addon's event handler
-local originalOnEvent = addon.frame:GetScript("OnEvent")
-addon.frame:SetScript("OnEvent", function(self, event, ...)
-    if event == "RAID_TARGET_UPDATE" then
-        OnRaidTargetUpdate()
-    elseif event == "PLAYER_TARGET_CHANGED" then
-        OnTargetChanged()
-    elseif event == "UPDATE_MOUSEOVER_UNIT" then
-        OnMouseover()
-    end
-    
-    if originalOnEvent then
-        originalOnEvent(self, event, ...)
-    end
-end)
 
 -- Manual CC callout command
 function addon:CalloutCC(marker)

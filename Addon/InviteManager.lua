@@ -13,9 +13,9 @@ local INVITE_DELAY = 0.5  -- Seconds between invites (to avoid throttling)
 
 -- Initialize Invite Manager
 function addon:InitInviteManager()
-    addon.frame:RegisterEvent("GROUP_ROSTER_UPDATE")
-    addon.frame:RegisterEvent("PARTY_INVITE_REQUEST")
-    
+    addon:RegisterModuleEvent("GROUP_ROSTER_UPDATE", function(event, ...)
+        -- Could auto-check for new joins here
+    end)
     addon:Debug("Invite Manager initialized")
 end
 
@@ -234,14 +234,3 @@ function addon:ConfirmKick()
     addon.pendingKicks = nil
 end
 
--- Hook into addon's event handler for group updates
-local originalOnEvent = addon.frame:GetScript("OnEvent")
-addon.frame:SetScript("OnEvent", function(self, event, ...)
-    if event == "GROUP_ROSTER_UPDATE" then
-        -- Could auto-check for new joins here
-    end
-    
-    if originalOnEvent then
-        originalOnEvent(self, event, ...)
-    end
-end)

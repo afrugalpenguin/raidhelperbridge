@@ -154,6 +154,18 @@ local function SlashHandler(msg)
     end
 end
 
+-- Central event dispatcher
+-- Modules register handlers here instead of overwriting OnEvent
+addon.eventHandlers = {}
+
+function addon:RegisterModuleEvent(event, handler)
+    if not addon.eventHandlers[event] then
+        addon.eventHandlers[event] = {}
+        addon.frame:RegisterEvent(event)
+    end
+    table.insert(addon.eventHandlers[event], handler)
+end
+
 -- Event handler
 RaidHelperBridge:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == addonName then
@@ -176,6 +188,14 @@ RaidHelperBridge:SetScript("OnEvent", function(self, event, arg1)
         end
         if addon.InitInviteManager then
             addon:InitInviteManager()
+        end
+    end
+
+    -- Dispatch to module handlers
+    local handlers = addon.eventHandlers[event]
+    if handlers then
+        for _, handler in ipairs(handlers) do
+            handler(event, arg1)
         end
     end
 end)
