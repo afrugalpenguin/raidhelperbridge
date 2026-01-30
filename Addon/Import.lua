@@ -3,9 +3,6 @@ local addonName, addon = ...
 -- Import string parsing
 -- Format: !RHB!<base64-deflate-compressed-json>
 
--- LibDeflate is used for decompression (must be in Libs folder)
-local LibDeflate = LibStub and LibStub:GetLibrary("LibDeflate", true)
-
 -- Base64 decoding
 local b64chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 local function base64decode(data)
@@ -156,11 +153,10 @@ function addon:ParseImportString(importStr)
     
     -- Decompress
     local json
+    local LibDeflate = _G.LibDeflate
     if LibDeflate then
         json = LibDeflate:DecompressDeflate(compressed)
     else
-        -- If LibDeflate isn't available, try treating as uncompressed
-        -- (for testing/development)
         addon:Debug("LibDeflate not found, trying uncompressed")
         json = compressed
     end
