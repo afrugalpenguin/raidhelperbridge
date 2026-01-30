@@ -120,21 +120,38 @@ local function SlashHandler(msg)
     for word in msg:gmatch("%S+") do
         table.insert(args, word:lower())
     end
-    
+
     local cmd = args[1] or "help"
-    
+
     if cmd == "import" then
         addon:ShowImportDialog()
     elseif cmd == "cc" then
-        addon:ShowCCEditor()
+        addon:ShowCCAssignments()
+    elseif cmd == "callout" then
+        local marker = tonumber(args[2])
+        addon:CalloutCC(marker)
+    elseif cmd == "whisper" then
+        addon:ToggleAutoWhisper()
     elseif cmd == "groups" then
-        addon:ShowGroupEditor()
+        addon:PreviewGroupLayout()
+    elseif cmd == "buffs" then
+        addon:ShowBuffSummary()
     elseif cmd == "invite" then
         addon:SendRaidInvites()
+    elseif cmd == "cancel" then
+        addon:CancelInvites()
     elseif cmd == "sort" then
         addon:ApplyGroupLayout()
     elseif cmd == "status" then
         addon:ShowStatus()
+    elseif cmd == "who" then
+        addon:WhoCheck()
+    elseif cmd == "kickcheck" then
+        addon:KickNonEventPlayers()
+    elseif cmd == "confirmkick" then
+        addon:ConfirmKick()
+    elseif cmd == "mock" then
+        addon:LoadMockEvent()
     elseif cmd == "debug" then
         addon.charDb.debugMode = not addon.charDb.debugMode
         addon:Print("Debug mode: " .. (addon.charDb.debugMode and "ON" or "OFF"))
@@ -143,14 +160,20 @@ local function SlashHandler(msg)
         addon:Print("Event data cleared.")
     else
         addon:Print("Commands:")
-        addon:Print("  /rhb import - Import event from Raid-Helper")
-        addon:Print("  /rhb cc - Open CC assignment editor")
-        addon:Print("  /rhb groups - Open group template editor")
-        addon:Print("  /rhb invite - Send raid invites")
-        addon:Print("  /rhb sort - Sort raid groups")
-        addon:Print("  /rhb status - Show current event status")
-        addon:Print("  /rhb debug - Toggle debug mode")
-        addon:Print("  /rhb clear - Clear current event data")
+        addon:Print("  /rhb import    - Import event from Raid-Helper")
+        addon:Print("  /rhb status    - Show current event status")
+        addon:Print("  /rhb cc        - Show CC assignments")
+        addon:Print("  /rhb callout # - Announce CC for marker # in raid")
+        addon:Print("  /rhb whisper   - Toggle auto-whisper on/off")
+        addon:Print("  /rhb groups    - Preview group layout")
+        addon:Print("  /rhb buffs     - Show available raid buffs")
+        addon:Print("  /rhb sort      - Apply group optimisation")
+        addon:Print("  /rhb invite    - Send raid invites")
+        addon:Print("  /rhb cancel    - Cancel pending invites")
+        addon:Print("  /rhb who       - Check event players' raid status")
+        addon:Print("  /rhb mock      - Load mock event data (testing)")
+        addon:Print("  /rhb debug     - Toggle debug mode")
+        addon:Print("  /rhb clear     - Clear current event data")
     end
 end
 
@@ -235,6 +258,36 @@ function addon:ShowStatus()
             end
         end
     end
+end
+
+-- Mock event for testing without Bridge
+function addon:LoadMockEvent()
+    addon.charDb.currentEvent = {
+        version = 1,
+        eventId = "mock-kara-001",
+        eventName = "Karazhan Thursday (Mock)",
+        eventTime = time() + 86400,
+        players = {
+            { name = "Tankadin", class = "PALADIN", role = "tank", spec = "protection" },
+            { name = "Beartank", class = "DRUID", role = "tank", spec = "feral" },
+            { name = "Frostbolt", class = "MAGE", role = "rdps", spec = "frost" },
+            { name = "Icyveins", class = "MAGE", role = "rdps", spec = "frost" },
+            { name = "Dotmaster", class = "WARLOCK", role = "rdps", spec = "affliction" },
+            { name = "Backstab", class = "ROGUE", role = "mdps", spec = "combat" },
+            { name = "Windrunner", class = "HUNTER", role = "rdps", spec = "beastmastery" },
+            { name = "Holybolt", class = "PALADIN", role = "healer", spec = "holy" },
+            { name = "Treeheals", class = "DRUID", role = "healer", spec = "restoration" },
+            { name = "Spiritlink", class = "SHAMAN", role = "healer", spec = "restoration" },
+        },
+        ccAssignments = {
+            { marker = 6, assignments = {{ ccType = "polymorph", playerName = "Frostbolt" }} },
+            { marker = 5, assignments = {{ ccType = "polymorph", playerName = "Icyveins" }} },
+            { marker = 4, assignments = {{ ccType = "banish", playerName = "Dotmaster" }} },
+            { marker = 3, assignments = {{ ccType = "freezingtrap", playerName = "Windrunner" }} },
+        },
+    }
+    addon:Print("Mock event loaded: Karazhan Thursday")
+    addon:Print("Use /rhb status to see details")
 end
 
 -- Export addon table
