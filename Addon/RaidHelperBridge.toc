@@ -1,0 +1,36 @@
+## Interface: 20504
+## Title: Raid Helper Bridge
+## Notes: Bridges Discord Raid-Helper signups with in-game raid management
+## Author: Mac
+## Version: 1.0.0
+## SavedVariables: RaidHelperBridgeDB
+## SavedVariablesPerCharacter: RaidHelperBridgeCharDB
+
+# Libraries
+Libs\LibStub\LibStub.lua
+Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+Libs\AceAddon-3.0\AceAddon-3.0.lua
+Libs\AceEvent-3.0\AceEvent-3.0.lua
+Libs\AceConsole-3.0\AceConsole-3.0.lua
+Libs\AceTimer-3.0\AceTimer-3.0.lua
+Libs\AceComm-3.0\AceComm-3.0.lua
+Libs\AceSerializer-3.0\AceSerializer-3.0.lua
+Libs\LibDeflate\LibDeflate.lua
+
+# Data
+Data\CCAbilities.lua
+Data\BuffProviders.lua
+Data\MarkerInfo.lua
+
+# Core
+Core.lua
+Import.lua
+CCManager.lua
+GroupManager.lua
+InviteManager.lua
+
+# UI
+UI\MainFrame.lua
+UI\ImportDialog.lua
+UI\CCEditor.lua
+UI\GroupEditor.lua
