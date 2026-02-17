@@ -100,6 +100,34 @@ export interface ImportPayload {
     }[];
 }
 
+// Raid-Helper API v2 response types
+export interface RaidHelperSignUp {
+    id: string;
+    name: string;         // Discord display name
+    className: string;    // "Hunter", "Mage", "Absence", "Bench", etc.
+    specName: string;     // "Beastmastery", "Holy1", "Feral1", etc.
+    roleName: string;     // "Tanks", "Melee", "Ranged", "Healers"
+    entryTime: number;
+    position: number;
+    status: string;
+    userId: string;
+}
+
+export interface RaidHelperApiResponse {
+    id: string;
+    channelId: string;
+    guildId: string;
+    leaderId: string;
+    title: string;
+    description: string;
+    startTime: number;    // Unix timestamp
+    endTime: number;
+    signUps: RaidHelperSignUp[];
+    lastUpdated: number;
+    templateId: string;
+    advancedSettings: Record<string, unknown>;
+}
+
 // Discord-to-WoW character mapping (stored per user/server)
 export interface CharacterMapping {
     discordId: string;

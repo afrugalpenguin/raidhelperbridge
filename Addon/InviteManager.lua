@@ -69,8 +69,33 @@ local function ProcessInviteQueue()
     if addon:IsInRaid(playerName) then
         addon:Debug(playerName .. " already in raid, skipping")
     else
-        InviteUnit(playerName)
-        addon:Debug("Invited " .. playerName)
+        local ok, err = pcall(C_PartyInfo.InviteUnit, playerName)
+        if ok then
+            addon:Debug("Invited " .. playerName)
+        else
+            addon:Print("Could not invite " .. playerName .. ", skipping")
+            addon:Debug("Invite error: " .. tostring(err))
+        end
+    end
+end
+
+-- Continue sending queued invites after raid conversion
+local function ContinueInviteQueue()
+    if #inviteQueue == 0 then
+        addon:Print("All invites sent")
+        return
+    end
+
+    addon:Print("Sending invites to " .. #inviteQueue .. " players...")
+
+    if inviteTimer then
+        inviteTimer:Cancel()
+    end
+
+    ProcessInviteQueue()
+
+    if #inviteQueue > 0 then
+        inviteTimer = C_Timer.NewTicker(INVITE_DELAY, ProcessInviteQueue, #inviteQueue)
     end
 end
 
@@ -81,39 +106,40 @@ function addon:SendRaidInvites()
         addon:Print("No event loaded. Use /rhb import first.")
         return
     end
-    
-    -- Make sure we're in a raid or can create one
-    if not IsInRaid() then
-        if IsInGroup() then
-            ConvertToRaid()
-            addon:Print("Converted to raid")
-        else
-            addon:Print("Please create a group first (invite someone or use /invite)")
-            return
-        end
-    end
-    
+
     -- Get list of players to invite
     inviteQueue = InviteManager:GetInviteList()
-    
+
     if #inviteQueue == 0 then
         addon:Print("All players already in raid")
         return
     end
-    
-    addon:Print("Sending invites to " .. #inviteQueue .. " players...")
-    
-    -- Start invite timer
-    if inviteTimer then
-        inviteTimer:Cancel()
-    end
-    
-    -- Process first invite immediately
-    ProcessInviteQueue()
-    
-    -- Schedule remaining invites
-    if #inviteQueue > 0 then
-        inviteTimer = C_Timer.NewTicker(INVITE_DELAY, ProcessInviteQueue, #inviteQueue)
+
+    if IsInRaid() then
+        -- Already in a raid, just send invites
+        ContinueInviteQueue()
+    elseif IsInGroup() then
+        -- In a party, convert to raid then send
+        ConvertToRaid()
+        addon:Print("Converted to raid")
+        ContinueInviteQueue()
+    else
+        -- Solo: invite first person, wait for a join, then convert and continue
+        local firstPlayer = table.remove(inviteQueue, 1)
+        C_PartyInfo.InviteUnit(firstPlayer)
+        addon:Print("Invited " .. firstPlayer .. " — waiting for someone to join before sending remaining invites...")
+
+        -- Listen for the party to form, then convert and continue
+        local waitFrame = CreateFrame("Frame")
+        waitFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
+        waitFrame:SetScript("OnEvent", function(self)
+            if IsInGroup() then
+                self:UnregisterEvent("GROUP_ROSTER_UPDATE")
+                ConvertToRaid()
+                addon:Print("Converted to raid")
+                ContinueInviteQueue()
+            end
+        end)
     end
 end
 
@@ -227,7 +253,7 @@ function addon:ConfirmKick()
     end
     
     for _, player in ipairs(addon.pendingKicks) do
-        UninviteUnit(player.name)
+        C_PartyInfo.UninviteUnit(player.name)
         addon:Print("Removed " .. player.name)
     end
     

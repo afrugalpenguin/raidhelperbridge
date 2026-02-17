@@ -129,7 +129,7 @@ export function buildImportPayload(
  */
 export function generateImportString(payload: ImportPayload): string {
     const json = JSON.stringify(payload);
-    const compressed = pako.deflate(json);
+    const compressed = pako.deflateRaw(json);
     const base64 = Buffer.from(compressed).toString('base64');
     return `!RHB!${base64}`;
 }
@@ -145,7 +145,7 @@ export function parseImportString(importString: string): ImportPayload | null {
         
         const base64 = importString.slice(5);
         const compressed = Buffer.from(base64, 'base64');
-        const json = pako.inflate(compressed, { to: 'string' });
+        const json = pako.inflateRaw(compressed, { to: 'string' });
         return JSON.parse(json);
     } catch (e) {
         console.error('Failed to parse import string:', e);

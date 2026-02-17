@@ -298,36 +298,37 @@ addon.BUFF_PROVIDERS = {
 }
 
 -- Group templates for common TBC raid compositions
+-- Numeric array so ipairs() in GroupManager iterates correctly
 addon.DEFAULT_GROUP_TEMPLATES = {
-    meleeGroup = {
+    [1] = {
         name = "Melee DPS Group",
         description = "Windfury + Battle Shout + LotP",
         priorityBuffs = { "windfury", "battleshout", "leaderofthepack", "strengthofearth" },
         preferredClasses = { "WARRIOR", "ROGUE", "SHAMAN" },
         preferredRoles = { "mdps" },
     },
-    casterGroup = {
+    [2] = {
         name = "Caster DPS Group",
         description = "Totem of Wrath + Moonkin + Shadow Priest",
         priorityBuffs = { "totemofwrath", "moonkinaura", "vampirictouch", "wrathofair" },
         preferredClasses = { "MAGE", "WARLOCK", "SHAMAN", "DRUID", "PRIEST" },
         preferredRoles = { "rdps" },
     },
-    healerGroup = {
+    [3] = {
         name = "Healer Group",
         description = "Mana Tide + Tree of Life + Mana Spring",
         priorityBuffs = { "manatide", "treeoflife", "manaspring" },
         preferredClasses = { "PRIEST", "DRUID", "PALADIN", "SHAMAN" },
         preferredRoles = { "healer" },
     },
-    tankGroup = {
+    [4] = {
         name = "Tank Group",
         description = "Tanks + dedicated support",
         priorityBuffs = { "devotionaura", "commandingshout" },
         preferredClasses = { "WARRIOR", "PALADIN", "DRUID" },
         preferredRoles = { "tank" },
     },
-    hunterGroup = {
+    [5] = {
         name = "Hunter Group",
         description = "BM Hunter + Feral + Enhance",
         priorityBuffs = { "ferociousinspiration", "leaderofthepack", "windfury" },
