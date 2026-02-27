@@ -58,7 +58,8 @@ RaidHelperBridge/
 │   │   ├── BuffProviders.lua # ~30 TBC raid buffs with class/spec info
 │   │   └── MarkerInfo.lua    # Raid markers 1-8
 │   ├── UI/
-│   │   └── MainFrame.lua     # Minimap button
+│   │   ├── MainFrame.lua     # Minimap button
+│   │   └── CCFrame.lua       # CC assignment display frames
 │   └── Libs/
 │       ├── LibStub/          # Library registration (included)
 │       └── LibDeflate/       # Decompression (included)
@@ -122,6 +123,8 @@ This outputs an `!RHB!...` string you can paste into the addon's import dialog, 
 /rhb invite       Send raid invites to event signups
 /rhb cancel       Cancel pending invites
 /rhb who          Check which event players are in the raid
+/rhb mycc         Show your CC assignments (draggable frame)
+/rhb ccframe      Show all CC assignments (leader view)
 /rhb mock         Load mock event for testing (no Bridge needed)
 /rhb debug        Toggle debug messages
 /rhb clear        Clear current event data
@@ -193,7 +196,7 @@ Decompressed JSON payload:
 
 ### Tech Stack
 - **Addon**: Lua 5.1 (WoW TBC 2.5.4, Interface 20504), raw WoW API (no Ace3), LibDeflate for decompression
-- **Bridge**: Next.js 14, TypeScript, pako for compression, discord.js for embed parsing
+- **Bridge**: Next.js 14, TypeScript, pako for compression
 
 ### Testing Without the Bridge
 
@@ -207,12 +210,14 @@ Use `/rhb mock` in-game to load a 10-player Karazhan raid with CC assignments. T
 
 ## TODO
 
+- [x] Raid-Helper API integration
+- [x] Bridge web app UI (event selector, name mapping, import string generator)
+- [x] CC assignment display frames (player + leader views)
 - [ ] Full in-game CC template editor UI
 - [ ] Full in-game group template editor UI
 - [ ] Minimap button with proper LDB positioning
 - [ ] Character name mapping persistence (Discord name -> WoW name)
-- [ ] Bridge web app UI (event selector, CC rule builder)
-- [ ] Raid-Helper API integration
+- [ ] Bridge CC rule builder UI
 - [ ] End-to-end in-game testing
 
 ## License

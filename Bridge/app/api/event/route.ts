@@ -8,6 +8,24 @@ import {
     RaidRole,
 } from '@/lib/types';
 
+// Simple in-memory rate limiter: max 30 requests per minute per IP
+const RATE_LIMIT_WINDOW = 60_000;
+const RATE_LIMIT_MAX = 30;
+const requestCounts = new Map<string, { count: number; resetAt: number }>();
+
+function isRateLimited(ip: string): boolean {
+    const now = Date.now();
+    const entry = requestCounts.get(ip);
+
+    if (!entry || now >= entry.resetAt) {
+        requestCounts.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
+        return false;
+    }
+
+    entry.count++;
+    return entry.count > RATE_LIMIT_MAX;
+}
+
 const EXCLUDED_CLASS_NAMES = new Set([
     'absence', 'bench', 'tentative', 'late',
 ]);
@@ -66,6 +84,17 @@ function transformSignup(signup: RaidHelperSignUp): RaidSignup | null {
 }
 
 export async function GET(request: NextRequest) {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+        ?? request.headers.get('x-real-ip')
+        ?? 'unknown';
+
+    if (isRateLimited(ip)) {
+        return NextResponse.json(
+            { error: 'Too many requests. Try again in a minute.' },
+            { status: 429 }
+        );
+    }
+
     const { searchParams } = new URL(request.url);
     const eventId = searchParams.get('id');
 
