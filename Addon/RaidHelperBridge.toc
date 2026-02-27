@@ -24,3 +24,4 @@ InviteManager.lua
 
 # UI
 UI\MainFrame.lua
+UI\CCFrame.lua

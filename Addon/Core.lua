@@ -150,6 +150,10 @@ local function SlashHandler(msg)
         addon:KickNonEventPlayers()
     elseif cmd == "confirmkick" then
         addon:ConfirmKick()
+    elseif cmd == "mycc" then
+        addon:TogglePlayerCCFrame()
+    elseif cmd == "ccframe" then
+        addon:ToggleLeaderCCFrame()
     elseif cmd == "mock" then
         addon:LoadMockEvent()
     elseif cmd == "debug" then
@@ -171,6 +175,8 @@ local function SlashHandler(msg)
         addon:Print("  /rhb invite    - Send raid invites")
         addon:Print("  /rhb cancel    - Cancel pending invites")
         addon:Print("  /rhb who       - Check event players' raid status")
+        addon:Print("  /rhb mycc      - Toggle your CC assignments window")
+        addon:Print("  /rhb ccframe   - Toggle leader CC assignments window")
         addon:Print("  /rhb mock      - Load mock event data (testing)")
         addon:Print("  /rhb debug     - Toggle debug mode")
         addon:Print("  /rhb clear     - Clear current event data")

@@ -204,7 +204,12 @@ function addon:ImportEvent(importStr)
     if data.groupTemplates and #data.groupTemplates > 0 then
         addon:Print("Group templates loaded")
     end
-    
+
+    -- Refresh CC display frames if visible
+    if addon.RefreshCCFrames then
+        addon:RefreshCCFrames()
+    end
+
     return true
 end
 
