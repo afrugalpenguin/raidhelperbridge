@@ -54,9 +54,10 @@ describe('groupSolver', () => {
       { discordId: '3', discordName: 'DPS', class: 'ROGUE', role: 'mdps', spec: undefined, wowCharacter: 'DPS' },
     ];
     const groups = autoAssignGroups(mixed, GROUP_PRESETS['tbc-25'].templates);
-    // Melee template prefers ROGUE + mdps role
-    const meleeGroup = groups.find(g => g.label === 'Melee');
+    // Tanks + Melee template prefers tank and mdps roles
+    const meleeGroup = groups.find(g => g.label === 'Tanks + Melee');
     expect(meleeGroup).toBeDefined();
+    expect(meleeGroup!.players).toContain('Tank');
     expect(meleeGroup!.players).toContain('DPS');
     // Healer template prefers PRIEST + healer role
     const healerGroup = groups.find(g => g.label === 'Healers');

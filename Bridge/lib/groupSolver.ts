@@ -19,11 +19,11 @@ export const GROUP_PRESETS: Record<string, { label: string; templates: GroupTemp
   'tbc-25': {
     label: 'TBC 25-man',
     templates: [
-      { name: 'Melee', description: 'Melee DPS + Enhancement', priorityBuffs: ['windfury', 'battleshout', 'leaderofthepack'], preferredClasses: ['WARRIOR', 'ROGUE'], preferredRoles: ['mdps'] },
-      { name: 'Casters', description: 'Caster DPS', priorityBuffs: ['totemofwrath', 'moonkinaura'], preferredClasses: ['MAGE', 'WARLOCK'], preferredRoles: ['rdps'] },
-      { name: 'Hunters', description: 'Physical ranged', priorityBuffs: ['ferociousinspiration', 'trueshotaura'], preferredClasses: ['HUNTER', 'SHAMAN'], preferredRoles: ['rdps'] },
-      { name: 'Healers', description: 'Healers + Mana tide', priorityBuffs: ['manatide', 'treeoflife'], preferredClasses: ['PRIEST', 'DRUID', 'PALADIN', 'SHAMAN'], preferredRoles: ['healer'] },
-      { name: 'Tanks', description: 'Tank group', priorityBuffs: ['battleshout', 'devotionaura'], preferredClasses: ['WARRIOR', 'PALADIN', 'DRUID'], preferredRoles: ['tank'] },
+      { name: 'Tanks + Melee', description: 'Tanks and melee DPS', priorityBuffs: ['windfury', 'battleshout'], preferredClasses: ['WARRIOR', 'ROGUE', 'PALADIN', 'DRUID'], preferredRoles: ['tank', 'mdps'] },
+      { name: 'Melee', description: 'Melee DPS + Enhancement', priorityBuffs: ['windfury', 'leaderofthepack'], preferredClasses: ['WARRIOR', 'ROGUE'], preferredRoles: ['mdps'] },
+      { name: 'Casters', description: 'Caster DPS', priorityBuffs: ['totemofwrath', 'moonkinaura'], preferredClasses: ['MAGE', 'WARLOCK', 'HUNTER'], preferredRoles: ['rdps'] },
+      { name: 'Ranged', description: 'Ranged DPS', priorityBuffs: ['ferociousinspiration', 'trueshotaura'], preferredClasses: ['HUNTER', 'WARLOCK', 'MAGE'], preferredRoles: ['rdps'] },
+      { name: 'Healers', description: 'Healers', priorityBuffs: ['manatide', 'treeoflife'], preferredClasses: ['PRIEST', 'DRUID', 'PALADIN', 'SHAMAN'], preferredRoles: ['healer'] },
     ],
   },
 };
