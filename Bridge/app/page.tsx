@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import type { EventData, RosterEntry } from '@/lib/rosterTypes';
 import { loadMappings, saveMapping } from '@/lib/characterMappings';
 import { autoResolveCC } from '@/lib/ccResolver';
 import type { CCAssignment } from '@/lib/ccResolver';
 import type { GroupAssignment } from '@/lib/groupSolver';
 import { autoAssignGroups } from '@/lib/groupSolver';
+import { decodeShareHash } from '@/lib/shareUrl';
+import type { SharePayload } from '@/lib/shareUrl';
 import StepFetchEvent from '@/components/StepFetchEvent';
 import StepMapNames from '@/components/StepMapNames';
 import StepCCRules from '@/components/StepCCRules';
@@ -30,14 +32,13 @@ export default function Home() {
   const [roster, setRoster] = useState<RosterEntry[]>([]);
   const [ccAssignments, setCCAssignments] = useState<CCAssignment[]>([]);
   const [groups, setGroups] = useState<GroupAssignment[]>([]);
+  const [sharedBuffOverrides, setSharedBuffOverrides] = useState<Set<string> | null>(null);
 
-  const fetchEvent = async () => {
-    const eventId = extractEventId(urlInput);
-    if (!eventId) {
-      setError('Enter a valid Raid-Helper event URL or numeric ID.');
-      return;
-    }
+  // Pending share payload — applied after event fetch completes
+  const pendingShareRef = useRef<SharePayload | null>(null);
+  const groupsRef = useRef<HTMLElement | null>(null);
 
+  const fetchEventById = useCallback(async (eventId: string) => {
     setLoading(true);
     setError('');
     setEvent(null);
@@ -64,16 +65,53 @@ export default function Home() {
         wowCharacter: stored[s.discordId] || '',
       }));
       setRoster(rosterEntries);
-      // Auto-resolve initial CC assignments
       setCCAssignments(autoResolveCC(rosterEntries));
-      // Auto-assign groups
-      setGroups(autoAssignGroups(rosterEntries));
+
+      // If there's a pending share payload, apply its groups instead of auto-assign
+      const share = pendingShareRef.current;
+      if (share) {
+        pendingShareRef.current = null;
+        const rosterNames = new Set(rosterEntries.map(r => r.wowCharacter.trim() || r.discordName));
+        const sharedGroups: GroupAssignment[] = share.g.map((g, i) => ({
+          groupNumber: i + 1,
+          label: g.l,
+          players: g.p.filter(name => rosterNames.has(name)),
+        }));
+        setGroups(sharedGroups);
+        setSharedBuffOverrides(share.b ? new Set(share.b) : null);
+        // Clear the hash so refreshing doesn't re-apply
+        window.history.replaceState(null, '', window.location.pathname);
+        // Scroll to groups after render
+        setTimeout(() => groupsRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+      } else {
+        setGroups(autoAssignGroups(rosterEntries));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
+      pendingShareRef.current = null;
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const fetchEvent = async () => {
+    const eventId = extractEventId(urlInput);
+    if (!eventId) {
+      setError('Enter a valid Raid-Helper event URL or numeric ID.');
+      return;
+    }
+    await fetchEventById(eventId);
   };
+
+  // Detect #share= on initial load
+  useEffect(() => {
+    const share = decodeShareHash(window.location.hash);
+    if (share) {
+      pendingShareRef.current = share;
+      setUrlInput(share.e);
+      fetchEventById(share.e);
+    }
+  }, [fetchEventById]);
 
   const updateWowName = (index: number, name: string) => {
     setRoster((prev) => {
@@ -103,7 +141,14 @@ export default function Home() {
           <>
             <StepMapNames roster={roster} onUpdateName={updateWowName} />
             <StepCCRules roster={roster} assignments={ccAssignments} onChange={setCCAssignments} />
-            <StepGroupBuilder roster={roster} groups={groups} onChange={setGroups} />
+            <StepGroupBuilder
+              ref={groupsRef}
+              roster={roster}
+              groups={groups}
+              onChange={setGroups}
+              eventId={event!.eventId}
+              initialBuffOverrides={sharedBuffOverrides}
+            />
             <StepGenerateImport event={event!} roster={roster} ccAssignments={ccAssignments} groupAssignments={groups} />
           </>
         )}

@@ -1,15 +1,18 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, forwardRef } from 'react';
 import type { RosterEntry } from '@/lib/rosterTypes';
 import type { GroupAssignment, StoredGroupTemplate } from '@/lib/groupSolver';
 import { autoAssignGroups, loadGroupTemplates, saveGroupTemplate, deleteGroupTemplate, applyGroupTemplate } from '@/lib/groupSolver';
 import { CLASS_COLORS, ROLE_LABELS } from '@/lib/constants';
 import { resolveGroupBuffs, BUFFS } from '@/lib/groupBuffs';
+import { encodeShareUrl } from '@/lib/shareUrl';
 import type { RaidRole } from '@/lib/types';
 
 interface Props {
   roster: RosterEntry[];
   groups: GroupAssignment[];
   onChange: (groups: GroupAssignment[]) => void;
+  eventId: string;
+  initialBuffOverrides?: Set<string> | null;
 }
 
 type DragSource = { groupIndex: number | 'pool'; playerName: string };
@@ -35,7 +38,7 @@ function decodeDrag(e: React.DragEvent): DragSource | null {
   }
 }
 
-export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
+const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilder({ roster, groups, onChange, eventId, initialBuffOverrides }, ref) {
   const [dropGroupTarget, setDropGroupTarget] = useState<number | 'pool' | null>(null);
   const [dropPlayerTarget, setDropPlayerTarget] = useState<string | null>(null);
   const [draggedPlayer, setDraggedPlayer] = useState<string | null>(null);
@@ -43,7 +46,8 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
   const [savedTemplates, setSavedTemplates] = useState<StoredGroupTemplate[]>([]);
   // Player-keyed buff overrides: `${playerName}_${buffId}` in set
   // Overrides follow the player when dragged between groups
-  const [buffOverrides, setBuffOverrides] = useState<Set<string>>(new Set());
+  const [buffOverrides, setBuffOverrides] = useState<Set<string>>(initialBuffOverrides ?? new Set());
+  const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle');
   // Popover state: which buff icon is showing a candidate picker
   const [buffPopover, setBuffPopover] = useState<{ groupIndex: number; buffId: string; candidates: string[] } | null>(null);
 
@@ -148,6 +152,13 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
     setSavedTemplates(loadGroupTemplates());
   }, []);
 
+  // Apply shared buff overrides when loaded from URL
+  useEffect(() => {
+    if (initialBuffOverrides && initialBuffOverrides.size > 0) {
+      setBuffOverrides(initialBuffOverrides);
+    }
+  }, [initialBuffOverrides]);
+
   // Close buff popover on outside click
   useEffect(() => {
     if (!buffPopover) return;
@@ -216,6 +227,18 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
   const handleDelete = (templateName: string) => {
     deleteGroupTemplate(templateName);
     setSavedTemplates(loadGroupTemplates());
+  };
+
+  const handleShare = async () => {
+    const url = encodeShareUrl(eventId, groups, buffOverrides);
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareStatus('copied');
+      setTimeout(() => setShareStatus('idle'), 2000);
+    } catch {
+      // Fallback: select text in a prompt
+      window.prompt('Copy this share URL:', url);
+    }
   };
 
   const handleLabelChange = (groupIndex: number, label: string) => {
@@ -362,7 +385,7 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
   };
 
   return (
-    <section className="bg-gray-800 rounded-lg p-6 mb-6">
+    <section ref={ref} className="bg-gray-800 rounded-lg p-6 mb-6">
       <div className="flex items-center justify-between mb-1">
         <h2 className="text-lg font-semibold">4. Raid Groups</h2>
         <div className="flex items-center gap-2">
@@ -405,6 +428,16 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
             title="Redo (Ctrl+Y)"
           >
             Redo
+          </button>
+          <button
+            onClick={handleShare}
+            className={`text-sm px-3 py-1 rounded border ${
+              shareStatus === 'copied'
+                ? 'text-green-400 border-green-600'
+                : 'text-gray-400 hover:text-white border-gray-600 hover:border-gray-400'
+            }`}
+          >
+            {shareStatus === 'copied' ? 'Copied!' : 'Share'}
           </button>
           <button
             onClick={handleSave}
@@ -594,4 +627,6 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
       )}
     </section>
   );
-}
+});
+
+export default StepGroupBuilder;
