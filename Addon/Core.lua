@@ -155,7 +155,8 @@ local function SlashHandler(msg)
     elseif cmd == "ccframe" then
         addon:ToggleLeaderCCFrame()
     elseif cmd == "mock" then
-        addon:LoadMockEvent()
+        local scenario = args[2] or "kara"
+        addon:LoadMockEvent(scenario)
     elseif cmd == "debug" then
         addon.charDb.debugMode = not addon.charDb.debugMode
         addon:Print("Debug mode: " .. (addon.charDb.debugMode and "ON" or "OFF"))
@@ -177,7 +178,7 @@ local function SlashHandler(msg)
         addon:Print("  /rhb who       - Check event players' raid status")
         addon:Print("  /rhb mycc      - Toggle your CC assignments window")
         addon:Print("  /rhb ccframe   - Toggle leader CC assignments window")
-        addon:Print("  /rhb mock      - Load mock event data (testing)")
+        addon:Print("  /rhb mock [scenario] - Load mock data (kara/ssc/nocc/empty)")
         addon:Print("  /rhb debug     - Toggle debug mode")
         addon:Print("  /rhb clear     - Clear current event data")
     end
@@ -267,32 +268,123 @@ function addon:ShowStatus()
 end
 
 -- Mock event for testing without Bridge
-function addon:LoadMockEvent()
-    addon.charDb.currentEvent = {
-        version = 1,
-        eventId = "mock-kara-001",
-        eventName = "Karazhan Thursday (Mock)",
-        eventTime = time() + 86400,
-        players = {
-            { name = "Tankadin", class = "PALADIN", role = "tank", spec = "protection" },
-            { name = "Beartank", class = "DRUID", role = "tank", spec = "feral" },
-            { name = "Frostbolt", class = "MAGE", role = "rdps", spec = "frost" },
-            { name = "Icyveins", class = "MAGE", role = "rdps", spec = "frost" },
-            { name = "Dotmaster", class = "WARLOCK", role = "rdps", spec = "affliction" },
-            { name = "Backstab", class = "ROGUE", role = "mdps", spec = "combat" },
-            { name = "Windrunner", class = "HUNTER", role = "rdps", spec = "beastmastery" },
-            { name = "Holybolt", class = "PALADIN", role = "healer", spec = "holy" },
-            { name = "Treeheals", class = "DRUID", role = "healer", spec = "restoration" },
-            { name = "Spiritlink", class = "SHAMAN", role = "healer", spec = "restoration" },
-        },
-        ccAssignments = {
-            { marker = 6, assignments = {{ ccType = "polymorph", playerName = "Frostbolt" }} },
-            { marker = 5, assignments = {{ ccType = "polymorph", playerName = "Icyveins" }} },
-            { marker = 4, assignments = {{ ccType = "banish", playerName = "Dotmaster" }} },
-            { marker = 3, assignments = {{ ccType = "freezingtrap", playerName = "Windrunner" }} },
-        },
-    }
-    addon:Print("Mock event loaded: Karazhan Thursday")
+function addon:LoadMockEvent(scenario)
+    scenario = (scenario or "kara"):lower()
+
+    if scenario == "kara" then
+        addon.charDb.currentEvent = {
+            version = 1,
+            eventId = "mock-kara-001",
+            eventName = "Karazhan Thursday (Mock)",
+            eventTime = time() + 86400,
+            players = {
+                { name = "Tankadin", class = "PALADIN", role = "tank", spec = "protection" },
+                { name = "Beartank", class = "DRUID", role = "tank", spec = "feral" },
+                { name = "Frostbolt", class = "MAGE", role = "rdps", spec = "frost" },
+                { name = "Icyveins", class = "MAGE", role = "rdps", spec = "frost" },
+                { name = "Dotmaster", class = "WARLOCK", role = "rdps", spec = "affliction" },
+                { name = "Backstab", class = "ROGUE", role = "mdps", spec = "combat" },
+                { name = "Windrunner", class = "HUNTER", role = "rdps", spec = "beastmastery" },
+                { name = "Holybolt", class = "PALADIN", role = "healer", spec = "holy" },
+                { name = "Treeheals", class = "DRUID", role = "healer", spec = "restoration" },
+                { name = "Spiritlink", class = "SHAMAN", role = "healer", spec = "restoration" },
+            },
+            ccAssignments = {
+                { marker = 6, assignments = {{ ccType = "polymorph", playerName = "Frostbolt" }} },
+                { marker = 5, assignments = {{ ccType = "polymorph", playerName = "Icyveins" }} },
+                { marker = 4, assignments = {{ ccType = "banish", playerName = "Dotmaster" }} },
+                { marker = 3, assignments = {{ ccType = "freezingtrap", playerName = "Windrunner" }} },
+            },
+        }
+        addon:Print("Mock loaded: Karazhan (10-man)")
+
+    elseif scenario == "ssc" then
+        addon.charDb.currentEvent = {
+            version = 1,
+            eventId = "mock-ssc-001",
+            eventName = "Serpentshrine Cavern (Mock)",
+            eventTime = time() + 86400,
+            players = {
+                -- Tanks
+                { name = "Tankadin", class = "PALADIN", role = "tank", spec = "protection" },
+                { name = "Beartank", class = "DRUID", role = "tank", spec = "feral" },
+                { name = "Shieldwall", class = "WARRIOR", role = "tank", spec = "protection" },
+                -- Healers
+                { name = "Holybolt", class = "PALADIN", role = "healer", spec = "holy" },
+                { name = "Treeheals", class = "DRUID", role = "healer", spec = "restoration" },
+                { name = "Spiritlink", class = "SHAMAN", role = "healer", spec = "restoration" },
+                { name = "Lightwell", class = "PRIEST", role = "healer", spec = "holy" },
+                { name = "Penance", class = "PRIEST", role = "healer", spec = "discipline" },
+                -- Melee DPS
+                { name = "Backstab", class = "ROGUE", role = "mdps", spec = "combat" },
+                { name = "Eviscerate", class = "ROGUE", role = "mdps", spec = "combat" },
+                { name = "Mortalstrike", class = "WARRIOR", role = "mdps", spec = "arms" },
+                { name = "Stormstrike", class = "SHAMAN", role = "mdps", spec = "enhancement" },
+                { name = "Catswipe", class = "DRUID", role = "mdps", spec = "feral" },
+                -- Ranged DPS
+                { name = "Frostbolt", class = "MAGE", role = "rdps", spec = "frost" },
+                { name = "Icyveins", class = "MAGE", role = "rdps", spec = "fire" },
+                { name = "Arcanemiss", class = "MAGE", role = "rdps", spec = "arcane" },
+                { name = "Dotmaster", class = "WARLOCK", role = "rdps", spec = "affliction" },
+                { name = "Shadowbolt", class = "WARLOCK", role = "rdps", spec = "destruction" },
+                { name = "Felguard", class = "WARLOCK", role = "rdps", spec = "demonology" },
+                { name = "Windrunner", class = "HUNTER", role = "rdps", spec = "beastmastery" },
+                { name = "Steadyshot", class = "HUNTER", role = "rdps", spec = "marksmanship" },
+                { name = "Shadowmend", class = "PRIEST", role = "rdps", spec = "shadow" },
+                { name = "Moonfire", class = "DRUID", role = "rdps", spec = "balance" },
+                { name = "Thunderclap", class = "SHAMAN", role = "rdps", spec = "elemental" },
+                { name = "Holyshock", class = "PALADIN", role = "mdps", spec = "retribution" },
+            },
+            ccAssignments = {
+                { marker = 6, assignments = {{ ccType = "polymorph", playerName = "Frostbolt" }} },
+                { marker = 5, assignments = {{ ccType = "polymorph", playerName = "Icyveins" }} },
+                { marker = 4, assignments = {{ ccType = "banish", playerName = "Dotmaster" }} },
+                { marker = 3, assignments = {{ ccType = "freezingtrap", playerName = "Windrunner" }} },
+                { marker = 7, assignments = {{ ccType = "shackle", playerName = "Lightwell" }} },
+                { marker = 1, assignments = {{ ccType = "sap", playerName = "Backstab" }} },
+            },
+        }
+        addon:Print("Mock loaded: Serpentshrine Cavern (25-man)")
+
+    elseif scenario == "nocc" then
+        addon.charDb.currentEvent = {
+            version = 1,
+            eventId = "mock-nocc-001",
+            eventName = "Gruul's Lair - No CC (Mock)",
+            eventTime = time() + 86400,
+            players = {
+                { name = "Tankadin", class = "PALADIN", role = "tank", spec = "protection" },
+                { name = "Beartank", class = "DRUID", role = "tank", spec = "feral" },
+                { name = "Shieldwall", class = "WARRIOR", role = "tank", spec = "protection" },
+                { name = "Frostbolt", class = "MAGE", role = "rdps", spec = "frost" },
+                { name = "Dotmaster", class = "WARLOCK", role = "rdps", spec = "affliction" },
+                { name = "Backstab", class = "ROGUE", role = "mdps", spec = "combat" },
+                { name = "Windrunner", class = "HUNTER", role = "rdps", spec = "beastmastery" },
+                { name = "Holybolt", class = "PALADIN", role = "healer", spec = "holy" },
+                { name = "Treeheals", class = "DRUID", role = "healer", spec = "restoration" },
+                { name = "Spiritlink", class = "SHAMAN", role = "healer", spec = "restoration" },
+            },
+            ccAssignments = {},
+        }
+        addon:Print("Mock loaded: Gruul's Lair (no CC)")
+
+    elseif scenario == "empty" then
+        addon.charDb.currentEvent = {
+            version = 1,
+            eventId = "mock-empty-001",
+            eventName = "Empty Event (Mock)",
+            eventTime = time() + 86400,
+            players = {},
+            ccAssignments = {},
+        }
+        addon:Print("Mock loaded: Empty event (0 players)")
+
+    else
+        addon:Print("Unknown mock scenario: " .. scenario)
+        addon:Print("Available: kara, ssc, nocc, empty")
+        return
+    end
+
     addon:Print("Use /rhb status to see details")
 end
 
