@@ -41,42 +41,64 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
   const [draggedPlayer, setDraggedPlayer] = useState<string | null>(null);
   const dragSourceRef = useRef<DragSource | null>(null);
   const [savedTemplates, setSavedTemplates] = useState<StoredGroupTemplate[]>([]);
-  // Player-keyed buff overrides: `${playerName}_${buffId}` -> true
+  // Player-keyed buff overrides: `${playerName}_${buffId}` in set
   // Overrides follow the player when dragged between groups
   const [buffOverrides, setBuffOverrides] = useState<Set<string>>(new Set());
+  // Popover state: which buff icon is showing a candidate picker
+  const [buffPopover, setBuffPopover] = useState<{ groupIndex: number; buffId: string; candidates: string[] } | null>(null);
 
-  const toggleBuff = (groupIndex: number | 'pool', buffId: string, autoProvider: string | undefined, buff: { providerClass: string }) => {
+  const setOverride = (playerName: string, buffId: string, on: boolean) => {
     setBuffOverrides(prev => {
       const next = new Set(prev);
-      // If auto-detected provider exists, toggle override on that player
-      if (autoProvider) {
-        const key = `${autoProvider}_${buffId}`;
-        if (next.has(key)) next.delete(key); else next.add(key);
-        return next;
-      }
-      // No auto provider — find all candidates of the right class in this group
-      const groupPlayers = groupIndex !== 'pool' ? groups[groupIndex].players : [];
-      const candidates = groupPlayers.filter(p => {
-        const entry = roster.find(r => getPlayerName(r) === p);
-        return entry && entry.class === buff.providerClass;
-      });
-      // If any already have the override, remove all; otherwise add all
-      const anyOverridden = candidates.some(p => next.has(`${p}_${buffId}`));
-      for (const p of candidates) {
-        if (anyOverridden) {
-          next.delete(`${p}_${buffId}`);
-        } else {
-          next.add(`${p}_${buffId}`);
-        }
-      }
+      const key = `${playerName}_${buffId}`;
+      if (on) next.add(key); else next.delete(key);
       return next;
     });
   };
 
+  const getCandidates = (groupIndex: number | 'pool', providerClass: string): string[] => {
+    const groupPlayers = groupIndex !== 'pool' ? groups[groupIndex].players : [];
+    return groupPlayers.filter(p => {
+      const entry = roster.find(r => getPlayerName(r) === p);
+      return entry && entry.class === providerClass;
+    });
+  };
+
+  const handleBuffClick = (groupIndex: number | 'pool', buffId: string, autoProvider: string | undefined, buff: { providerClass: string }) => {
+    // If auto-detected provider exists, toggle override on that player
+    if (autoProvider) {
+      const key = `${autoProvider}_${buffId}`;
+      setOverride(autoProvider, buffId, !buffOverrides.has(key));
+      setBuffPopover(null);
+      return;
+    }
+
+    // Check if there's already an override for someone in this group — if so, remove it
+    if (groupIndex !== 'pool') {
+      const existing = groups[groupIndex].players.find(p => buffOverrides.has(`${p}_${buffId}`));
+      if (existing) {
+        setOverride(existing, buffId, false);
+        setBuffPopover(null);
+        return;
+      }
+    }
+
+    // No override yet — find candidates
+    const candidates = typeof groupIndex === 'number' ? getCandidates(groupIndex, buff.providerClass) : [];
+    if (candidates.length === 0) return;
+    if (candidates.length === 1) {
+      setOverride(candidates[0], buffId, true);
+      setBuffPopover(null);
+      return;
+    }
+
+    // Multiple candidates — show popover
+    setBuffPopover({ groupIndex: groupIndex as number, buffId, candidates });
+  };
+
   const getBuffActive = (playerNames: string[], buffId: string, autoActive: boolean): boolean => {
-    // Check if any player in this group has a manual override for this buff
     const hasOverride = playerNames.some(p => buffOverrides.has(`${p}_${buffId}`));
-    if (hasOverride) return !autoActive; // override flips the auto state
+    if (hasOverride) return !autoActive;
     return autoActive;
   };
 
@@ -87,6 +109,15 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
   useEffect(() => {
     setSavedTemplates(loadGroupTemplates());
   }, []);
+
+  // Close buff popover on outside click
+  useEffect(() => {
+    if (!buffPopover) return;
+    const handler = () => setBuffPopover(null);
+    // Delay so the opening click doesn't immediately close it
+    const id = setTimeout(() => document.addEventListener('click', handler), 0);
+    return () => { clearTimeout(id); document.removeEventListener('click', handler); };
+  }, [buffPopover]);
 
   // Compute pools by signup status
   const assignedNames = new Set(groups.flatMap(g => g.players));
@@ -386,21 +417,41 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
                 {resolveGroupBuffs(group.players, roster).map(({ buff, active: autoActive, provider }) => {
                   const shown = getBuffActive(group.players, buff.id, autoActive);
                   const overridden = isOverridden(group.players, buff.id);
+                  const popoverOpen = buffPopover?.groupIndex === gi && buffPopover?.buffId === buff.id;
                   return (
-                    <img
-                      key={buff.id}
-                      src={`https://wow.zamimg.com/images/wow/icons/small/${buff.icon}.jpg`}
-                      alt={buff.name}
-                      title={
-                        overridden
-                          ? `${buff.name} (manual${shown ? '' : ' — disabled'})`
-                          : shown ? `${buff.name} (${provider})` : `${buff.name} — missing`
-                      }
-                      onClick={() => toggleBuff(gi, buff.id, provider, buff)}
-                      className={`w-4 h-4 rounded-sm cursor-pointer transition-all ${
-                        shown ? '' : 'opacity-25 grayscale'
-                      } ${overridden ? 'ring-1 ring-yellow-500/60' : ''}`}
-                    />
+                    <div key={buff.id} className="relative">
+                      <img
+                        src={`https://wow.zamimg.com/images/wow/icons/small/${buff.icon}.jpg`}
+                        alt={buff.name}
+                        title={
+                          overridden
+                            ? `${buff.name} (manual${shown ? '' : ' — disabled'})`
+                            : shown ? `${buff.name} (${provider})` : `${buff.name} — missing`
+                        }
+                        onClick={() => handleBuffClick(gi, buff.id, provider, buff)}
+                        className={`w-4 h-4 rounded-sm cursor-pointer transition-all ${
+                          shown ? '' : 'opacity-25 grayscale'
+                        } ${overridden ? 'ring-1 ring-yellow-500/60' : ''}`}
+                      />
+                      {popoverOpen && (
+                        <div className="absolute bottom-6 left-0 bg-gray-800 border border-gray-600 rounded shadow-lg py-1 z-50 min-w-[120px]">
+                          <div className="text-xs text-gray-400 px-2 pb-1 border-b border-gray-700">{buff.name}</div>
+                          {buffPopover.candidates.map(name => {
+                            const cls = getPlayerClass(roster, name);
+                            return (
+                              <button
+                                key={name}
+                                onClick={() => { setOverride(name, buff.id, true); setBuffPopover(null); }}
+                                className="block w-full text-left px-2 py-1 text-sm hover:bg-gray-700"
+                                style={{ color: cls ? CLASS_COLORS[cls as keyof typeof CLASS_COLORS] : '#ccc' }}
+                              >
+                                {name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
