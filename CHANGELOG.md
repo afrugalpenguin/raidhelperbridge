@@ -1,5 +1,9 @@
 # Changelog
 
+**v1.0.5**
+
+- Fixed class detection for specs shared between classes — Protection1 now correctly maps to Paladin (not Warrior), Holy1 to Paladin, Restoration to Druid, Restoration1 to Shaman
+
 **v1.0.4**
 
 - Fixed group assignments — now fetches explicit group data from the Raid-Helper raidplan API instead of inferring from signup position
