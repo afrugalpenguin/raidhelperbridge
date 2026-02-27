@@ -49,7 +49,7 @@ export function autoAssignGroups(roster: RosterEntry[], templates: GroupTemplate
     });
   }
 
-  // Step 1: Assign by preferred role/class from templates
+  // Step 1: Assign players whose role AND class both match a template
   for (let i = 0; i < groups.length; i++) {
     const template = templates[i];
     if (!template) continue;
@@ -62,7 +62,24 @@ export function autoAssignGroups(roster: RosterEntry[], templates: GroupTemplate
       const classMatch = template.preferredClasses.includes(entry.class);
       const roleMatch = template.preferredRoles.includes(entry.role);
 
-      if (classMatch || roleMatch) {
+      if (classMatch && roleMatch) {
+        groups[i].players.push(name);
+        assigned.add(name);
+      }
+    }
+  }
+
+  // Step 1b: Assign remaining players that match by role only
+  for (let i = 0; i < groups.length; i++) {
+    const template = templates[i];
+    if (!template) continue;
+
+    for (const entry of roster) {
+      const name = getPlayerName(entry);
+      if (assigned.has(name)) continue;
+      if (groups[i].players.length >= 5) break;
+
+      if (template.preferredRoles.includes(entry.role)) {
         groups[i].players.push(name);
         assigned.add(name);
       }

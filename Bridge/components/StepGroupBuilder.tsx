@@ -48,11 +48,11 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
     onChange(updated);
   }, [groups, onChange]);
 
-  // Drag handlers
+  // Drag handlers — encode source in dataTransfer for reliability
   const handleDragStart = (groupIndex: number | 'pool', playerName: string) => (e: React.DragEvent) => {
     setDragSource({ groupIndex, playerName });
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', playerName);
+    e.dataTransfer.setData('application/json', JSON.stringify({ groupIndex, playerName }));
   };
 
   const handleDragOver = (targetIndex: number | 'pool') => (e: React.DragEvent) => {
@@ -68,10 +68,17 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
   const handleDrop = (targetIndex: number | 'pool') => (e: React.DragEvent) => {
     e.preventDefault();
     setDropTarget(null);
-
-    if (!dragSource) return;
-    const { groupIndex: sourceIndex, playerName } = dragSource;
     setDragSource(null);
+
+    let sourceIndex: number | 'pool';
+    let playerName: string;
+    try {
+      const data = JSON.parse(e.dataTransfer.getData('application/json'));
+      sourceIndex = data.groupIndex;
+      playerName = data.playerName;
+    } catch {
+      return;
+    }
 
     // No-op if dropping on same group
     if (sourceIndex === targetIndex) return;
@@ -80,14 +87,11 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
     if (targetIndex !== 'pool' && groups[targetIndex].players.length >= 5) return;
 
     const updated = groups.map((g, i) => {
-      if (i === sourceIndex) {
-        // Remove from source group
-        return { ...g, players: g.players.filter(p => p !== playerName) };
-      }
-      if (i === targetIndex) {
-        // Add to target group
-        return { ...g, players: [...g.players, playerName] };
-      }
+      const isSource = i === sourceIndex;
+      const isTarget = i === targetIndex;
+      if (isSource && isTarget) return g;
+      if (isSource) return { ...g, players: g.players.filter(p => p !== playerName) };
+      if (isTarget) return { ...g, players: [...g.players, playerName] };
       return g;
     });
 
