@@ -1,5 +1,18 @@
 # Changelog
 
+**v1.0.2**
+
+- Rewrote group drag-and-drop — drop on a group to move, drop on a player to swap
+- Both source and target players highlight during swap hover
+- Groups allow overfill with red counter when >5 players
+- Simplified groups to numbered buckets (removed role/class template logic)
+- CC assignments laid out as single rows (marker, CC type, player inline)
+- Narrowed CC player dropdown to fixed width
+- Moon CC auto-assign now prefers sap over polymorph
+- Fixed faded player persisting after group reset
+- BigWigs packager GitHub Actions for CurseForge deployment
+- Added .pkgmeta for addon packaging
+
 **v1.0.1**
 
 - Fixed tanks not being detected — Raid-Helper returns `className=Tank` instead of the actual WoW class; now infers class from spec name
