@@ -176,8 +176,33 @@ export async function GET(request: NextRequest) {
 
         const data: RaidHelperApiResponse = await response.json();
 
+        // Fetch raidplan data for group assignments (best-effort)
+        const raidplanGroupMap = new Map<string, number>(); // userId -> groupNumber
+        try {
+            const raidplanRes = await fetch(
+                `https://raid-helper.dev/api/raidplan/${eventId}`,
+                { headers: { 'Accept': 'application/json' }, next: { revalidate: 60 } },
+            );
+            if (raidplanRes.ok) {
+                const raidplanData = await raidplanRes.json();
+                for (const slot of raidplanData.slots ?? []) {
+                    if (slot.id && slot.groupNumber != null) {
+                        raidplanGroupMap.set(slot.id, slot.groupNumber);
+                    }
+                }
+            }
+        } catch {
+            // Raidplan not available — fall back to sequential groups
+        }
+
         const signups: RaidSignup[] = (data.signUps ?? [])
-            .map(transformSignup)
+            .map((s) => {
+                const signup = transformSignup(s);
+                if (signup && raidplanGroupMap.has(s.userId)) {
+                    signup.groupNumber = raidplanGroupMap.get(s.userId);
+                }
+                return signup;
+            })
             .filter((s): s is RaidSignup => s !== null);
 
         const event: RaidEvent = {

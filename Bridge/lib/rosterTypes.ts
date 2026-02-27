@@ -15,5 +15,6 @@ export interface RosterEntry {
   role: RaidRole;
   spec?: string;
   position?: number;
+  groupNumber?: number;
   wowCharacter: string;
 }

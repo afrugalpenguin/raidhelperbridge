@@ -59,6 +59,7 @@ export default function Home() {
         role: s.role,
         spec: s.spec,
         position: s.position,
+        groupNumber: s.groupNumber,
         wowCharacter: stored[s.discordId] || '',
       }));
       setRoster(rosterEntries);
