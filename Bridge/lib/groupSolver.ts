@@ -9,6 +9,7 @@ export interface GroupAssignment {
 export interface StoredGroupTemplate {
   name: string;
   groups: { label: string; players: string[] }[];
+  buffOverrides?: string[]; // persisted Set<`${playerName}_${buffId}`> entries
 }
 
 const TEMPLATES_KEY = 'rhb-group-templates';
@@ -23,7 +24,7 @@ export function loadGroupTemplates(): StoredGroupTemplate[] {
   }
 }
 
-export function saveGroupTemplate(name: string, groups: GroupAssignment[]): void {
+export function saveGroupTemplate(name: string, groups: GroupAssignment[], buffOverrides?: Set<string>): void {
   if (typeof window === 'undefined') return;
   const templates = loadGroupTemplates();
   // Overwrite if same name exists
@@ -31,6 +32,7 @@ export function saveGroupTemplate(name: string, groups: GroupAssignment[]): void
   filtered.push({
     name,
     groups: groups.map(g => ({ label: g.label, players: [...g.players] })),
+    buffOverrides: buffOverrides ? Array.from(buffOverrides) : undefined,
   });
   try {
     localStorage.setItem(TEMPLATES_KEY, JSON.stringify(filtered));

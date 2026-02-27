@@ -139,13 +139,14 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
     setDraggedPlayer(null);
     setDropGroupTarget(null);
     setDropPlayerTarget(null);
+    setBuffOverrides(new Set());
     onChange(autoAssignGroups(roster));
   };
 
   const handleSave = () => {
     const name = prompt('Template name:');
     if (!name?.trim()) return;
-    saveGroupTemplate(name.trim(), groups);
+    saveGroupTemplate(name.trim(), groups, buffOverrides);
     setSavedTemplates(loadGroupTemplates());
   };
 
@@ -153,6 +154,7 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
     const template = savedTemplates.find(t => t.name === templateName);
     if (!template) return;
     onChange(applyGroupTemplate(template, roster));
+    setBuffOverrides(template.buffOverrides ? new Set(template.buffOverrides) : new Set());
   };
 
   const handleDelete = (templateName: string) => {
