@@ -24,114 +24,14 @@ local function base64decode(data)
     end))
 end
 
--- Simple JSON parser (subset needed for our format)
--- For a real addon, you'd use a proper JSON library
+-- JSON parsing via rxi/json.lua (loaded from Libs/json.lua)
 local function parseJSON(str)
-    -- This is a simplified parser - in production use a real JSON library
-    -- like json.lua from rxi/json.lua
-    
-    local pos = 1
-    local function skipWhitespace()
-        while pos <= #str and str:sub(pos, pos):match("%s") do
-            pos = pos + 1
-        end
-    end
-    
-    local function parseValue()
-        skipWhitespace()
-        local char = str:sub(pos, pos)
-        
-        if char == '"' then
-            -- String
-            pos = pos + 1
-            local startPos = pos
-            while pos <= #str and str:sub(pos, pos) ~= '"' do
-                if str:sub(pos, pos) == '\\' then
-                    pos = pos + 1
-                end
-                pos = pos + 1
-            end
-            local value = str:sub(startPos, pos - 1)
-            pos = pos + 1
-            -- Handle escape sequences
-            value = value:gsub("\\n", "\n"):gsub("\\r", "\r"):gsub("\\t", "\t"):gsub('\\"', '"'):gsub("\\\\", "\\")
-            return value
-            
-        elseif char == '{' then
-            -- Object
-            pos = pos + 1
-            local obj = {}
-            skipWhitespace()
-            while str:sub(pos, pos) ~= '}' do
-                skipWhitespace()
-                -- Parse key
-                if str:sub(pos, pos) ~= '"' then
-                    break
-                end
-                pos = pos + 1
-                local keyStart = pos
-                while str:sub(pos, pos) ~= '"' do
-                    pos = pos + 1
-                end
-                local key = str:sub(keyStart, pos - 1)
-                pos = pos + 1
-                
-                skipWhitespace()
-                pos = pos + 1 -- skip ':'
-                
-                obj[key] = parseValue()
-                
-                skipWhitespace()
-                if str:sub(pos, pos) == ',' then
-                    pos = pos + 1
-                end
-            end
-            pos = pos + 1
-            return obj
-            
-        elseif char == '[' then
-            -- Array
-            pos = pos + 1
-            local arr = {}
-            skipWhitespace()
-            while str:sub(pos, pos) ~= ']' do
-                table.insert(arr, parseValue())
-                skipWhitespace()
-                if str:sub(pos, pos) == ',' then
-                    pos = pos + 1
-                end
-            end
-            pos = pos + 1
-            return arr
-            
-        elseif char:match("[%d%-]") then
-            -- Number
-            local startPos = pos
-            if str:sub(pos, pos) == '-' then
-                pos = pos + 1
-            end
-            while pos <= #str and str:sub(pos, pos):match("[%d%.eE%+%-]") do
-                pos = pos + 1
-            end
-            return tonumber(str:sub(startPos, pos - 1))
-            
-        elseif str:sub(pos, pos + 3) == "true" then
-            pos = pos + 4
-            return true
-            
-        elseif str:sub(pos, pos + 4) == "false" then
-            pos = pos + 5
-            return false
-            
-        elseif str:sub(pos, pos + 3) == "null" then
-            pos = pos + 4
-            return nil
-        end
-        
+    local ok, result = pcall(json.decode, str)
+    if not ok then
+        addon:Debug("JSON parse error: " .. tostring(result))
         return nil
     end
-    
-    return parseValue()
+    return result
 end
 
 -- Parse import string

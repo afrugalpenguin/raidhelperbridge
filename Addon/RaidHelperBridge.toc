@@ -9,6 +9,7 @@
 # Libraries
 Libs\LibStub\LibStub.lua
 Libs\LibDeflate\LibDeflate.lua
+Libs\json.lua
 
 # Data
 Data\CCAbilities.lua

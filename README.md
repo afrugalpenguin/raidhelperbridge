@@ -69,7 +69,6 @@ RaidHelperBridge/
     ├── app/                  # Next.js pages
     ├── lib/
     │   ├── types.ts          # Shared type definitions
-    │   ├── embedParser.ts    # Raid-Helper Discord embed parser
     │   ├── importGenerator.ts # Import string compression/generation
     │   └── mockData.ts       # Mock Karazhan raid for testing
     └── scripts/
