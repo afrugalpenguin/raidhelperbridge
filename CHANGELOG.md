@@ -2,7 +2,8 @@
 
 **v1.0.9**
 
-- Buff optimiser — green Optimise button runs a greedy swap algorithm to maximise total buff coverage across all groups (undoable with Ctrl+Z)
+- Group preview frame — visual UI showing proposed group layout with class-coloured names and Sort button; replaces chat-only output in the tab panel
+- Buff optimiser — green Optimise button runs simulated annealing algorithm with 3-player rotations to maximise total buff coverage across all groups (undoable with Ctrl+Z)
 - Drag buff hints — green +N badge on group cards while dragging shows how many new buffs a player would bring to that group
 - Collapsible missing buff warnings — amber bar shows which groups are missing buffs that exist elsewhere in the raid; only warns about buffs with available providers
 - Shareable group layout URL — Share button encodes groups + buff overrides into a compressed URL hash; co-leads open it to auto-fetch the event and see the exact group setup
