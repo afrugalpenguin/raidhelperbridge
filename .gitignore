@@ -1,1 +1,26 @@
-nul
+# Dependencies
+node_modules/
+
+# Next.js build
+Bridge/.next/
+Bridge/out/
+
+# Next.js generated
+Bridge/next-env.d.ts
+
+# Environment
+.env
+.env.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+
+# Claude Code
+.claude/
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
