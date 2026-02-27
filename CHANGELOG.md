@@ -1,5 +1,9 @@
 # Changelog
 
+**v1.0.8**
+
+- Fixed tentative/bench/late/absent players being placed into groups from raidplan data — they now correctly appear only in their status pools
+
 **v1.0.7**
 
 - Incomplete groups highlighted amber with warning icon next to player count
