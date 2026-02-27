@@ -54,20 +54,20 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
         if (next.has(key)) next.delete(key); else next.add(key);
         return next;
       }
-      // No auto provider — find existing override for any player in this group
+      // No auto provider — find all candidates of the right class in this group
       const groupPlayers = groupIndex !== 'pool' ? groups[groupIndex].players : [];
-      const existing = groupPlayers.find(p => next.has(`${p}_${buffId}`));
-      if (existing) {
-        next.delete(`${existing}_${buffId}`);
-        return next;
-      }
-      // Find a candidate of the right class to associate with
-      const candidate = groupPlayers.find(p => {
+      const candidates = groupPlayers.filter(p => {
         const entry = roster.find(r => getPlayerName(r) === p);
         return entry && entry.class === buff.providerClass;
       });
-      if (candidate) {
-        next.add(`${candidate}_${buffId}`);
+      // If any already have the override, remove all; otherwise add all
+      const anyOverridden = candidates.some(p => next.has(`${p}_${buffId}`));
+      for (const p of candidates) {
+        if (anyOverridden) {
+          next.delete(`${p}_${buffId}`);
+        } else {
+          next.add(`${p}_${buffId}`);
+        }
       }
       return next;
     });
