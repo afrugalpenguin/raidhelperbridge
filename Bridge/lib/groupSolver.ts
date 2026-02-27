@@ -99,25 +99,7 @@ function assignByGroupNumber(roster: RosterEntry[]): GroupAssignment[] {
     players: groupMap.get(key) || [],
   }));
 
-  // Players without a groupNumber go into any group with space
-  const assigned = new Set(groups.flatMap(g => g.players));
-  for (const entry of roster) {
-    const name = getPlayerName(entry);
-    if (assigned.has(name)) continue;
-    const target = groups.find(g => g.players.length < 5);
-    if (target) {
-      target.players.push(name);
-    } else if (groups.length < 5) {
-      groups.push({
-        groupNumber: groups.length + 1,
-        label: `Group ${groups.length + 1}`,
-        players: [name],
-      });
-    } else {
-      groups[groups.length - 1].players.push(name);
-    }
-  }
-
+  // Players without a groupNumber are left unassigned (shown in pool)
   return groups;
 }
 
