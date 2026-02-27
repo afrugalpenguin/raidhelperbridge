@@ -208,6 +208,8 @@ export default function StepCCRules({ roster, assignments, onChange }: Props) {
                   })}
                 </select>
 
+                <div className="flex-1" />
+
                 {/* Add fallback */}
                 {ei === assignment.entries.length - 1 && (
                   <button
