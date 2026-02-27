@@ -184,7 +184,7 @@ export default function StepCCRules({ roster, assignments, onChange }: Props) {
                 <select
                   value={entry.playerName}
                   onChange={(e) => handleEntryChange(ai, ei, 'playerName', e.target.value)}
-                  className={`bg-gray-700 border rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500 flex-1 min-w-0 ${
+                  className={`bg-gray-700 border rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500 w-48 flex-shrink-0 ${
                     isDuplicate ? 'border-yellow-500/50' : 'border-gray-600'
                   }`}
                   style={
