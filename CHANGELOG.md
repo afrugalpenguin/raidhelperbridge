@@ -1,5 +1,9 @@
 # Changelog
 
+**v1.0.7**
+
+- Incomplete groups highlighted amber with warning icon next to player count
+
 **v1.0.6**
 
 - Tentative, bench, late, and absent signups now shown in separate pool boxes below raid groups — drag them into groups without refetching
