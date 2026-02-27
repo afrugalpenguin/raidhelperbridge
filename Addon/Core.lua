@@ -15,6 +15,7 @@ local defaults = {
         ccTemplates = {},
         groupTemplates = {},
         characterMappings = {},  -- Discord name -> WoW character
+        minimap = { hide = false },
     },
     char = {
         currentEvent = nil,

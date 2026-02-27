@@ -1,47 +1,41 @@
 local addonName, addon = ...
 
--- Main UI Frame (placeholder)
--- Full implementation would include:
--- - Minimap button
--- - Main configuration panel
--- - Event overview
+local LDB = LibStub("LibDataBroker-1.1")
+local LDBIcon = LibStub("LibDBIcon-1.0")
 
--- Create minimap button (basic implementation)
-local function CreateMinimapButton()
-    local button = CreateFrame("Button", "RHBMinimapButton", Minimap)
-    button:SetSize(32, 32)
-    button:SetFrameStrata("MEDIUM")
-    button:SetPoint("TOPLEFT", Minimap, "TOPLEFT", 0, 0)
-    
-    button:SetNormalTexture("Interface\\Icons\\INV_Misc_GroupLooking")
-    button:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
-    
-    button:SetScript("OnClick", function(self, btn)
-        if btn == "LeftButton" then
-            addon:ShowStatus()
-        elseif btn == "RightButton" then
+local dataObj = LDB:NewDataObject("RaidHelperBridge", {
+    type = "launcher",
+    text = "RHB",
+    icon = "Interface\\Icons\\INV_Misc_GroupLooking",
+    OnClick = function(self, button)
+        if button == "LeftButton" then
+            if IsShiftKeyDown() then
+                addon:ToggleLeaderCCFrame()
+            else
+                addon:ShowStatus()
+            end
+        elseif button == "RightButton" then
             addon:ShowImportDialog()
         end
-    end)
-    
-    button:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-        GameTooltip:AddLine("Raid Helper Bridge")
-        GameTooltip:AddLine("Left-click: Show status", 1, 1, 1)
-        GameTooltip:AddLine("Right-click: Import event", 1, 1, 1)
-        GameTooltip:Show()
-    end)
-    
-    button:SetScript("OnLeave", function()
-        GameTooltip:Hide()
-    end)
-    
-    return button
-end
+    end,
+    OnTooltipShow = function(tooltip)
+        tooltip:AddLine("Raid Helper Bridge")
+        local event = addon:GetCurrentEvent()
+        if event then
+            tooltip:AddLine(event.eventName, 1, 1, 1)
+            tooltip:AddLine(#event.players .. " players", 0.7, 0.7, 0.7)
+        else
+            tooltip:AddLine("No event loaded", 0.7, 0.7, 0.7)
+        end
+        tooltip:AddLine(" ")
+        tooltip:AddLine("Left-click: Status", 0, 1, 0)
+        tooltip:AddLine("Shift-click: CC Assignments", 0, 1, 0)
+        tooltip:AddLine("Right-click: Import", 0, 1, 0)
+    end,
+})
 
--- Initialize UI on load
 addon.frame:HookScript("OnEvent", function(self, event, arg1)
     if event == "PLAYER_LOGIN" then
-        CreateMinimapButton()
+        LDBIcon:Register("RaidHelperBridge", dataObj, addon.db.minimap)
     end
 end)
