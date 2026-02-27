@@ -6,6 +6,7 @@ export interface GroupBuff {
   name: string;
   icon: string;
   providerClass: WowClass; // used to find candidate when manually toggling
+  exclusionGroup?: string; // buffs in the same group are mutually exclusive per player
   match: (cls: WowClass, spec?: string) => boolean;
 }
 
@@ -23,6 +24,7 @@ export const BUFFS: GroupBuff[] = [
     name: 'Windfury Totem',
     icon: 'spell_nature_windfury',
     providerClass: 'SHAMAN',
+    exclusionGroup: 'air-totem',
     match: (cls) => cls === 'SHAMAN',
   },
   {
@@ -30,6 +32,7 @@ export const BUFFS: GroupBuff[] = [
     name: 'Wrath of Air Totem',
     icon: 'spell_nature_slowingtotem',
     providerClass: 'SHAMAN',
+    exclusionGroup: 'air-totem',
     match: (cls) => cls === 'SHAMAN',
   },
   {
@@ -58,6 +61,7 @@ export const BUFFS: GroupBuff[] = [
     name: 'Devotion Aura',
     icon: 'spell_holy_devotionaura',
     providerClass: 'PALADIN',
+    exclusionGroup: 'paladin-aura',
     match: (cls) => cls === 'PALADIN',
   },
   // --- Spec-specific ---
@@ -108,6 +112,7 @@ export const BUFFS: GroupBuff[] = [
     name: 'Sanctity Aura',
     icon: 'spell_holy_mindvision',
     providerClass: 'PALADIN',
+    exclusionGroup: 'paladin-aura',
     match: () => false, // manual toggle only — can't detect from spec data
   },
 ];
@@ -119,9 +124,22 @@ function getPlayerName(entry: RosterEntry): string {
 export function resolveGroupBuffs(
   playerNames: string[],
   roster: RosterEntry[],
+  overrides?: Set<string>,
 ): { buff: GroupBuff; active: boolean; provider?: string }[] {
   return BUFFS.map((buff) => {
     for (const name of playerNames) {
+      // If this player has an override for a DIFFERENT buff in the same exclusion group,
+      // they can't also provide this buff (e.g., paladin using Sanctity can't provide Devotion)
+      if (overrides && buff.exclusionGroup) {
+        const excluded = BUFFS.some(
+          (other) =>
+            other.id !== buff.id &&
+            other.exclusionGroup === buff.exclusionGroup &&
+            overrides.has(`${name}_${other.id}`),
+        );
+        if (excluded) continue;
+      }
+
       const entry = roster.find((r) => getPlayerName(r) === name);
       if (entry && buff.match(entry.class, entry.spec)) {
         return { buff, active: true, provider: name };

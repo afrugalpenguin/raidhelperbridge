@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import type { RosterEntry } from '@/lib/rosterTypes';
 import type { GroupAssignment, StoredGroupTemplate } from '@/lib/groupSolver';
 import { autoAssignGroups, loadGroupTemplates, saveGroupTemplate, deleteGroupTemplate, applyGroupTemplate } from '@/lib/groupSolver';
@@ -47,6 +47,43 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
   // Popover state: which buff icon is showing a candidate picker
   const [buffPopover, setBuffPopover] = useState<{ groupIndex: number; buffId: string; candidates: string[] } | null>(null);
 
+  // Undo/redo history
+  interface Snapshot { groups: GroupAssignment[]; overrides: string[] }
+  const [history, setHistory] = useState<Snapshot[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+
+  const pushSnapshot = useCallback(() => {
+    const snap: Snapshot = {
+      groups: groups.map(g => ({ ...g, players: [...g.players] })),
+      overrides: Array.from(buffOverrides),
+    };
+    setHistory(prev => {
+      const truncated = prev.slice(0, historyIndex + 1);
+      return [...truncated, snap];
+    });
+    setHistoryIndex(prev => prev + 1);
+  }, [groups, buffOverrides, historyIndex]);
+
+  const undo = useCallback(() => {
+    if (historyIndex < 0) return;
+    const snap = history[historyIndex];
+    onChange(snap.groups);
+    setBuffOverrides(new Set(snap.overrides));
+    setHistoryIndex(prev => prev - 1);
+  }, [history, historyIndex, onChange]);
+
+  const redo = useCallback(() => {
+    if (historyIndex >= history.length - 2) return;
+    const snap = history[historyIndex + 2];
+    if (!snap) return;
+    onChange(snap.groups);
+    setBuffOverrides(new Set(snap.overrides));
+    setHistoryIndex(prev => prev + 1);
+  }, [history, historyIndex, onChange]);
+
+  const canUndo = historyIndex >= 0;
+  const canRedo = historyIndex < history.length - 2;
+
   const setOverride = (playerName: string, buffId: string, on: boolean) => {
     setBuffOverrides(prev => {
       const next = new Set(prev);
@@ -65,6 +102,7 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
   };
 
   const handleBuffClick = (groupIndex: number | 'pool', buffId: string, autoProvider: string | undefined, buff: { providerClass: string }) => {
+    pushSnapshot();
     // If auto-detected provider exists, toggle override on that player
     if (autoProvider) {
       const key = `${autoProvider}_${buffId}`;
@@ -119,6 +157,22 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
     return () => { clearTimeout(id); document.removeEventListener('click', handler); };
   }, [buffPopover]);
 
+  // Undo/redo keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      if (e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) {
+        e.preventDefault();
+        redo();
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [undo, redo]);
+
   // Compute pools by signup status
   const assignedNames = new Set(groups.flatMap(g => g.players));
   const confirmedRoster = roster.filter(r => r.signupStatus === 'confirmed');
@@ -136,6 +190,7 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
     .filter(name => !assignedNames.has(name));
 
   const handleReset = () => {
+    pushSnapshot();
     setDraggedPlayer(null);
     setDropGroupTarget(null);
     setDropPlayerTarget(null);
@@ -153,6 +208,7 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
   const handleLoad = (templateName: string) => {
     const template = savedTemplates.find(t => t.name === templateName);
     if (!template) return;
+    pushSnapshot();
     onChange(applyGroupTemplate(template, roster));
     setBuffOverrides(template.buffOverrides ? new Set(template.buffOverrides) : new Set());
   };
@@ -205,6 +261,8 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
     if (!source) return;
     if (source.groupIndex === targetGroupIndex) return;
 
+    pushSnapshot();
+
     // Move: remove from source, add to target
     const updated = groups.map((g, i) => {
       let players = [...g.players];
@@ -244,6 +302,8 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
     const source = decodeDrag(e);
     if (!source) return;
     if (source.playerName === targetPlayer) return;
+
+    pushSnapshot();
 
     // Swap the two players in their respective groups
     const updated = groups.map((g, i) => {
@@ -331,6 +391,22 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
             </div>
           )}
           <button
+            onClick={undo}
+            disabled={!canUndo}
+            className="text-sm text-gray-400 hover:text-white px-2 py-1 rounded border border-gray-600 hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Undo (Ctrl+Z)"
+          >
+            Undo
+          </button>
+          <button
+            onClick={redo}
+            disabled={!canRedo}
+            className="text-sm text-gray-400 hover:text-white px-2 py-1 rounded border border-gray-600 hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Redo (Ctrl+Y)"
+          >
+            Redo
+          </button>
+          <button
             onClick={handleSave}
             className="text-sm text-gray-400 hover:text-white px-3 py-1 rounded border border-gray-600 hover:border-gray-400"
           >
@@ -370,7 +446,7 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
       <div className="flex flex-wrap gap-2 mb-4">
         {BUFFS.map(buff => {
           const covered = groups.filter(g => {
-            const auto = resolveGroupBuffs(g.players, roster).find(b => b.buff.id === buff.id);
+            const auto = resolveGroupBuffs(g.players, roster, buffOverrides).find(b => b.buff.id === buff.id);
             const autoActive = auto?.active ?? false;
             const hasOverride = g.players.some(p => buffOverrides.has(`${p}_${buff.id}`));
             return hasOverride ? !autoActive : autoActive;
@@ -442,7 +518,7 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
 
               {/* Buff icons */}
               <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-gray-800">
-                {resolveGroupBuffs(group.players, roster).map(({ buff, active: autoActive, provider }) => {
+                {resolveGroupBuffs(group.players, roster, buffOverrides).map(({ buff, active: autoActive, provider }) => {
                   const shown = getBuffActive(group.players, buff.id, autoActive);
                   const overridden = isOverridden(group.players, buff.id);
                   const popoverOpen = buffPopover?.groupIndex === gi && buffPopover?.buffId === buff.id;
