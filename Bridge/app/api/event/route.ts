@@ -118,6 +118,7 @@ function transformSignup(signup: RaidHelperSignUp): RaidSignup | null {
         class: wowClass,
         role: mapRoleName(signup.roleName),
         spec: cleanSpecName(signup.specName),
+        position: signup.position,
         signupTime: new Date(signup.entryTime * 1000),
         status: 'confirmed',
     };

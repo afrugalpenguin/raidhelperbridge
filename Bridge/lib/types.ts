@@ -7,6 +7,7 @@ export interface RaidSignup {
     class: WowClass;
     role: RaidRole;
     spec?: string;
+    position?: number;      // Raid-Helper lineup position (1-indexed, 5 per group)
     signupTime: Date;
     status: 'confirmed' | 'tentative' | 'bench' | 'absence';
 }

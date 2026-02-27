@@ -66,8 +66,64 @@ function getPlayerName(entry: RosterEntry): string {
   return entry.wowCharacter.trim() || entry.discordName;
 }
 
-// Auto-assign players to numbered groups, filling each to 5
+// Auto-assign players to numbered groups.
+// If roster entries have position data (from Raid-Helper lineup), use it.
+// Otherwise fill sequentially, 5 per group.
 export function autoAssignGroups(roster: RosterEntry[]): GroupAssignment[] {
+  const hasPositions = roster.some(r => r.position != null && r.position > 0);
+
+  if (hasPositions) {
+    return assignByPosition(roster);
+  }
+
+  return assignSequential(roster);
+}
+
+function assignByPosition(roster: RosterEntry[]): GroupAssignment[] {
+  const groupMap = new Map<number, string[]>();
+
+  for (const entry of roster) {
+    const name = getPlayerName(entry);
+    const pos = entry.position;
+    if (pos != null && pos > 0) {
+      const groupNum = Math.ceil(pos / 5);
+      if (!groupMap.has(groupNum)) groupMap.set(groupNum, []);
+      groupMap.get(groupNum)!.push(name);
+    }
+  }
+
+  // Build sorted groups (cap at 5 groups for WoW raid)
+  const sortedKeys = Array.from(groupMap.keys()).sort((a, b) => a - b).slice(0, 5);
+  const groups: GroupAssignment[] = sortedKeys.map((key, i) => ({
+    groupNumber: i + 1,
+    label: `Group ${i + 1}`,
+    players: groupMap.get(key) || [],
+  }));
+
+  // Players without a position (or in group 6+) go into any group with space
+  const assigned = new Set(groups.flatMap(g => g.players));
+  for (const entry of roster) {
+    const name = getPlayerName(entry);
+    if (assigned.has(name)) continue;
+    const target = groups.find(g => g.players.length < 5);
+    if (target) {
+      target.players.push(name);
+    } else if (groups.length < 5) {
+      groups.push({
+        groupNumber: groups.length + 1,
+        label: `Group ${groups.length + 1}`,
+        players: [name],
+      });
+    } else {
+      // All groups full, append to last group (will show red)
+      groups[groups.length - 1].players.push(name);
+    }
+  }
+
+  return groups;
+}
+
+function assignSequential(roster: RosterEntry[]): GroupAssignment[] {
   const numGroups = Math.min(Math.ceil(roster.length / 5), 5);
   const groups: GroupAssignment[] = [];
 
