@@ -93,7 +93,7 @@ const BUFFS: GroupBuff[] = [
     id: 'sanctity',
     name: 'Sanctity Aura',
     icon: 'spell_holy_mindvision',
-    match: (cls, spec) => cls === 'PALADIN' && !!spec && spec.toLowerCase().includes('retribution'),
+    match: () => false, // manual toggle only — can't detect from spec data
   },
 ];
 

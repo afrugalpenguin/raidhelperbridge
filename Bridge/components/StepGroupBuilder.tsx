@@ -41,6 +41,30 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
   const [draggedPlayer, setDraggedPlayer] = useState<string | null>(null);
   const dragSourceRef = useRef<DragSource | null>(null);
   const [savedTemplates, setSavedTemplates] = useState<StoredGroupTemplate[]>([]);
+  const [buffOverrides, setBuffOverrides] = useState<Record<string, boolean>>({});
+
+  const toggleBuff = (groupIndex: number, buffId: string) => {
+    const key = `${groupIndex}_${buffId}`;
+    setBuffOverrides(prev => {
+      const next = { ...prev };
+      if (key in next) {
+        delete next[key];
+      } else {
+        next[key] = !prev[key];
+      }
+      return next;
+    });
+  };
+
+  const getBuffState = (groupIndex: number, buffId: string, autoActive: boolean): boolean => {
+    const key = `${groupIndex}_${buffId}`;
+    if (key in buffOverrides) return buffOverrides[key];
+    return autoActive;
+  };
+
+  const isOverridden = (groupIndex: number, buffId: string): boolean => {
+    return `${groupIndex}_${buffId}` in buffOverrides;
+  };
 
   useEffect(() => {
     setSavedTemplates(loadGroupTemplates());
@@ -341,15 +365,26 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
 
               {/* Buff icons */}
               <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-gray-800">
-                {resolveGroupBuffs(group.players, roster).map(({ buff, active, provider }) => (
-                  <img
-                    key={buff.id}
-                    src={`https://wow.zamimg.com/images/wow/icons/small/${buff.icon}.jpg`}
-                    alt={buff.name}
-                    title={active ? `${buff.name} (${provider})` : `${buff.name} — missing`}
-                    className={`w-4 h-4 rounded-sm ${active ? '' : 'opacity-25 grayscale'}`}
-                  />
-                ))}
+                {resolveGroupBuffs(group.players, roster).map(({ buff, active: autoActive, provider }) => {
+                  const shown = getBuffState(gi, buff.id, autoActive);
+                  const overridden = isOverridden(gi, buff.id);
+                  return (
+                    <img
+                      key={buff.id}
+                      src={`https://wow.zamimg.com/images/wow/icons/small/${buff.icon}.jpg`}
+                      alt={buff.name}
+                      title={
+                        overridden
+                          ? `${buff.name} (manual${shown ? '' : ' — disabled'})`
+                          : shown ? `${buff.name} (${provider})` : `${buff.name} — missing`
+                      }
+                      onClick={() => toggleBuff(gi, buff.id)}
+                      className={`w-4 h-4 rounded-sm cursor-pointer transition-all ${
+                        shown ? '' : 'opacity-25 grayscale'
+                      } ${overridden ? 'ring-1 ring-yellow-500/60' : ''}`}
+                    />
+                  );
+                })}
               </div>
             </div>
           );
