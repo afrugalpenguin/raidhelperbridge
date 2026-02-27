@@ -139,114 +139,97 @@ export default function StepCCRules({ roster, assignments, onChange }: Props) {
         </p>
       )}
 
-      <div className="space-y-3">
+      <div className="space-y-2">
         {assignments.map((assignment, ai) => (
-          <div key={ai} className="bg-gray-900 rounded-lg p-3">
-            <div className="flex items-center gap-3 mb-2">
-              {/* Marker selector */}
-              <select
-                value={assignment.marker}
-                onChange={(e) => handleMarkerChange(ai, Number(e.target.value) as RaidMarker)}
-                className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500"
-                style={{ color: MARKER_COLORS[assignment.marker] }}
-              >
-                {ALL_MARKERS.map((m) => (
-                  <option key={m} value={m} disabled={m !== assignment.marker && usedMarkers.has(m)}>
-                    {MARKER_SYMBOLS[m]} {MARKER_NAMES[m]}
-                  </option>
-                ))}
-              </select>
+          assignment.entries.map((entry, ei) => {
+            const playersForCC = getPlayersForCC(roster, entry.ccType);
+            const isDuplicate =
+              entry.playerName &&
+              allAssignedPlayers.filter(p => p === entry.playerName).length > 1;
 
-              <div className="flex-1" />
-
-              {/* Add fallback button */}
-              <button
-                onClick={() => handleAddFallback(ai)}
-                className="text-gray-400 hover:text-white text-sm px-2 py-1 rounded hover:bg-gray-700"
-                title="Add fallback entry"
-              >
-                +
-              </button>
-
-              {/* Remove assignment */}
-              <button
-                onClick={() => handleRemoveAssignment(ai)}
-                className="text-gray-500 hover:text-red-400 text-sm px-2 py-1 rounded hover:bg-gray-700"
-                title="Remove marker assignment"
-              >
-                Remove
-              </button>
-            </div>
-
-            {/* Entries */}
-            {assignment.entries.map((entry, ei) => {
-              const playersForCC = getPlayersForCC(roster, entry.ccType);
-              const isDuplicate =
-                entry.playerName &&
-                allAssignedPlayers.filter(p => p === entry.playerName).length > 1;
-
-              return (
-                <div key={ei} className="flex items-center gap-2 ml-6 mb-1">
-                  {ei > 0 && (
-                    <span className="text-gray-500 text-xs w-12 text-right">or</span>
-                  )}
-                  {ei === 0 && <span className="w-12" />}
-
-                  {/* CC type dropdown */}
+            return (
+              <div key={`${ai}-${ei}`} className="flex items-center gap-2 bg-gray-900 rounded-lg px-3 py-2">
+                {/* Marker selector (only on first entry) */}
+                {ei === 0 ? (
                   <select
-                    value={entry.ccType}
-                    onChange={(e) => handleEntryChange(ai, ei, 'ccType', e.target.value)}
-                    className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500 w-40"
+                    value={assignment.marker}
+                    onChange={(e) => handleMarkerChange(ai, Number(e.target.value) as RaidMarker)}
+                    className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500 w-28 flex-shrink-0"
+                    style={{ color: MARKER_COLORS[assignment.marker] }}
                   >
-                    {availableCCTypes.map((cc) => (
-                      <option key={cc} value={cc}>
-                        {CC_LABELS[cc]}
+                    {ALL_MARKERS.map((m) => (
+                      <option key={m} value={m} disabled={m !== assignment.marker && usedMarkers.has(m)}>
+                        {MARKER_SYMBOLS[m]} {MARKER_NAMES[m]}
                       </option>
                     ))}
                   </select>
+                ) : (
+                  <span className="text-gray-500 text-xs w-28 text-right flex-shrink-0 pr-2">fallback</span>
+                )}
 
-                  {/* Player dropdown */}
-                  <select
-                    value={entry.playerName}
-                    onChange={(e) => handleEntryChange(ai, ei, 'playerName', e.target.value)}
-                    className={`bg-gray-700 border rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500 w-48 ${
-                      isDuplicate ? 'border-yellow-500/50' : 'border-gray-600'
-                    }`}
-                    style={
-                      entry.playerName
-                        ? { color: CLASS_COLORS[getPlayerClass(roster, entry.playerName) as keyof typeof CLASS_COLORS] || '#FFFFFF' }
-                        : undefined
-                    }
+                {/* CC type dropdown */}
+                <select
+                  value={entry.ccType}
+                  onChange={(e) => handleEntryChange(ai, ei, 'ccType', e.target.value)}
+                  className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500 w-40 flex-shrink-0"
+                >
+                  {availableCCTypes.map((cc) => (
+                    <option key={cc} value={cc}>
+                      {CC_LABELS[cc]}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Player dropdown */}
+                <select
+                  value={entry.playerName}
+                  onChange={(e) => handleEntryChange(ai, ei, 'playerName', e.target.value)}
+                  className={`bg-gray-700 border rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500 flex-1 min-w-0 ${
+                    isDuplicate ? 'border-yellow-500/50' : 'border-gray-600'
+                  }`}
+                  style={
+                    entry.playerName
+                      ? { color: CLASS_COLORS[getPlayerClass(roster, entry.playerName) as keyof typeof CLASS_COLORS] || '#FFFFFF' }
+                      : undefined
+                  }
+                >
+                  <option value="">Select player...</option>
+                  {playersForCC.map((name) => {
+                    const cls = getPlayerClass(roster, name);
+                    return (
+                      <option
+                        key={name}
+                        value={name}
+                        style={cls ? { color: CLASS_COLORS[cls as keyof typeof CLASS_COLORS] } : undefined}
+                      >
+                        {name}{cls ? ` (${cls.charAt(0) + cls.slice(1).toLowerCase()})` : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+
+                {/* Add fallback */}
+                {ei === assignment.entries.length - 1 && (
+                  <button
+                    onClick={() => handleAddFallback(ai)}
+                    className="text-gray-400 hover:text-white text-sm px-2 py-1 rounded hover:bg-gray-700 flex-shrink-0"
+                    title="Add fallback"
                   >
-                    <option value="">Select player...</option>
-                    {playersForCC.map((name) => {
-                      const cls = getPlayerClass(roster, name);
-                      return (
-                        <option
-                          key={name}
-                          value={name}
-                          style={cls ? { color: CLASS_COLORS[cls as keyof typeof CLASS_COLORS] } : undefined}
-                        >
-                          {name}{cls ? ` (${cls.charAt(0) + cls.slice(1).toLowerCase()})` : ''}
-                        </option>
-                      );
-                    })}
-                  </select>
+                    +
+                  </button>
+                )}
 
-                  {/* Remove entry (only if more than one) */}
-                  {assignment.entries.length > 1 && (
-                    <button
-                      onClick={() => handleRemoveEntry(ai, ei)}
-                      className="text-gray-500 hover:text-red-400 text-xs px-1"
-                      title="Remove entry"
-                    >
-                      x
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                {/* Remove */}
+                <button
+                  onClick={() => assignment.entries.length > 1 ? handleRemoveEntry(ai, ei) : handleRemoveAssignment(ai)}
+                  className="text-gray-500 hover:text-red-400 text-sm px-1 flex-shrink-0"
+                  title={assignment.entries.length > 1 ? 'Remove entry' : 'Remove assignment'}
+                >
+                  x
+                </button>
+              </div>
+            );
+          })
         ))}
       </div>
 
