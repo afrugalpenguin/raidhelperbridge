@@ -1,5 +1,13 @@
 # Changelog
 
+**v1.0.3**
+
+- Detect Raid-Helper lineup positions and auto-assign groups based on raidplan layout
+- Save/load group templates via localStorage for recurring raid setups
+- Role count summary (Tank/Healer/Melee DPS/Ranged DPS) shown above raid groups
+- CC row buttons pushed to far right for cleaner layout
+- Vercel Analytics added
+
 **v1.0.2**
 
 - Rewrote group drag-and-drop — drop on a group to move, drop on a player to swap
