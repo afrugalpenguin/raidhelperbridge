@@ -2,6 +2,11 @@
 
 **v1.0.9**
 
+- Shareable group layout URL — Share button encodes groups + buff overrides into a compressed URL hash; co-leads open it to auto-fetch the event and see the exact group setup
+- Buff mutual exclusions — toggling Sanctity Aura on a paladin removes their Devotion Aura count; same for Windfury/Wrath of Air on shamans
+- Undo/redo for group builder — Ctrl+Z / Ctrl+Y or header buttons; tracks all group and buff override changes
+- Buff coverage summary row above group cards showing icon + count per buff across all groups
+- Buff overrides persist with saved group templates
 - Party buff icons under each group card — 14 buffs (Bloodlust, Windfury, Wrath of Air, Mana Spring, Trueshot, Battle Shout, Devotion Aura, Moonkin, Leader of the Pack, Unleashed Rage, Totem of Wrath, Vampiric Touch, Ferocious Inspiration, Sanctity Aura)
 - Buff icons are clickable to manually toggle — overrides follow the player when dragged between groups
 - Popover picker when multiple candidates exist (e.g., two paladins — pick which one has the buff)
