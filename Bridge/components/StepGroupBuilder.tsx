@@ -46,6 +46,9 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
     .filter(name => !assignedNames.has(name));
 
   const handleReset = () => {
+    setDraggedPlayer(null);
+    setDropGroupTarget(null);
+    setDropPlayerTarget(null);
     onChange(autoAssignGroups(roster));
   };
 
