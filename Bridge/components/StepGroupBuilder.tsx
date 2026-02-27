@@ -45,9 +45,19 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
     setSavedTemplates(loadGroupTemplates());
   }, []);
 
-  // Compute unassigned players
+  // Compute pools by signup status
   const assignedNames = new Set(groups.flatMap(g => g.players));
-  const unassigned = roster
+  const confirmedRoster = roster.filter(r => r.signupStatus === 'confirmed');
+  const tentativeRoster = roster.filter(r => r.signupStatus === 'tentative');
+  const otherRoster = roster.filter(r => r.signupStatus !== 'confirmed' && r.signupStatus !== 'tentative');
+
+  const unassigned = confirmedRoster
+    .map(getPlayerName)
+    .filter(name => !assignedNames.has(name));
+  const tentative = tentativeRoster
+    .map(getPlayerName)
+    .filter(name => !assignedNames.has(name));
+  const other = otherRoster
     .map(getPlayerName)
     .filter(name => !assignedNames.has(name));
 
@@ -266,7 +276,7 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
       <div className="flex flex-wrap gap-4 mb-4 text-sm">
         {(['tank', 'healer', 'mdps', 'rdps', 'dps'] as RaidRole[])
           .map(role => {
-            const count = roster.filter(r => r.role === role).length;
+            const count = confirmedRoster.filter(r => r.role === role).length;
             if (count === 0) return null;
             return (
               <span key={role} className="text-gray-300">
@@ -276,7 +286,7 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
           })
         }
         <span className="text-gray-300">
-          <span className="text-gray-500">Total:</span> {roster.length}
+          <span className="text-gray-500">Total:</span> {confirmedRoster.length}
         </span>
       </div>
 
@@ -328,23 +338,32 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
         })}
       </div>
 
-      {/* Unassigned pool */}
-      {unassigned.length > 0 && (
-        <div
-          className={`bg-gray-900 rounded-lg p-3 transition-colors ${
-            dropGroupTarget === 'pool' && !dropPlayerTarget ? 'ring-2 ring-blue-500' : ''
-          }`}
-          onDragOver={onGroupDragOver('pool')}
-          onDragLeave={onGroupDragLeave}
-          onDrop={onGroupDrop('pool')}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-400">Unassigned</span>
-            <span className="text-gray-500 text-xs">{unassigned.length} player{unassigned.length !== 1 ? 's' : ''}</span>
-          </div>
-          <div className="flex flex-wrap gap-1">
-            {unassigned.map((name) => renderPlayer(name, 'pool'))}
-          </div>
+      {/* Pool boxes: Unassigned, Tentative, Other */}
+      {(unassigned.length > 0 || tentative.length > 0 || other.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {[
+            { label: 'Unassigned', players: unassigned },
+            { label: 'Tentative', players: tentative },
+            { label: 'Bench / Late / Absent', players: other },
+          ].map(pool => (
+            <div
+              key={pool.label}
+              className={`bg-gray-900 rounded-lg p-3 transition-colors ${
+                dropGroupTarget === 'pool' && !dropPlayerTarget ? 'ring-2 ring-blue-500' : ''
+              }`}
+              onDragOver={onGroupDragOver('pool')}
+              onDragLeave={onGroupDragLeave}
+              onDrop={onGroupDrop('pool')}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-400">{pool.label}</span>
+                <span className="text-gray-500 text-xs">{pool.players.length}</span>
+              </div>
+              <div className="space-y-1 min-h-[2rem]">
+                {pool.players.map((name) => renderPlayer(name, 'pool'))}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </section>

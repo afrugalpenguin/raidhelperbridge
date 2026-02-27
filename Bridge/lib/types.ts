@@ -10,7 +10,7 @@ export interface RaidSignup {
     position?: number;      // Raid-Helper lineup position (1-indexed, 5 per group)
     groupNumber?: number;   // From raidplan API — explicit group assignment (1-indexed)
     signupTime: Date;
-    status: 'confirmed' | 'tentative' | 'bench' | 'absence';
+    status: 'confirmed' | 'tentative' | 'bench' | 'late' | 'absence';
 }
 
 export interface RaidEvent {

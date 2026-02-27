@@ -16,5 +16,6 @@ export interface RosterEntry {
   spec?: string;
   position?: number;
   groupNumber?: number;
+  signupStatus: 'confirmed' | 'tentative' | 'bench' | 'late' | 'absence';
   wowCharacter: string;
 }

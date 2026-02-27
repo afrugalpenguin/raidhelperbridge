@@ -26,9 +26,12 @@ function isRateLimited(ip: string): boolean {
     return entry.count > RATE_LIMIT_MAX;
 }
 
-const EXCLUDED_CLASS_NAMES = new Set([
-    'absence', 'bench', 'tentative', 'late',
-]);
+const STATUS_CLASS_NAMES: Record<string, RaidSignup['status']> = {
+    absence: 'absence',
+    bench: 'bench',
+    tentative: 'tentative',
+    late: 'late',
+};
 
 const CLASS_NAME_MAP: Record<string, WowClass> = {
     warrior: 'WARRIOR',
@@ -112,11 +115,9 @@ function cleanSpecName(specName: string): string {
 }
 
 function transformSignup(signup: RaidHelperSignUp): RaidSignup | null {
-    if (EXCLUDED_CLASS_NAMES.has(signup.className.toLowerCase())) {
-        return null;
-    }
-
+    const statusOverride = STATUS_CLASS_NAMES[signup.className.toLowerCase()];
     const wowClass = mapClassName(signup.className, signup.specName);
+
     if (!wowClass) {
         return null;
     }
@@ -129,7 +130,7 @@ function transformSignup(signup: RaidHelperSignUp): RaidSignup | null {
         spec: cleanSpecName(signup.specName),
         position: signup.position,
         signupTime: new Date(signup.entryTime * 1000),
-        status: 'confirmed',
+        status: statusOverride ?? 'confirmed',
     };
 }
 

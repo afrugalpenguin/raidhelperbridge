@@ -60,6 +60,7 @@ export default function Home() {
         spec: s.spec,
         position: s.position,
         groupNumber: s.groupNumber,
+        signupStatus: s.status,
         wowCharacter: stored[s.discordId] || '',
       }));
       setRoster(rosterEntries);

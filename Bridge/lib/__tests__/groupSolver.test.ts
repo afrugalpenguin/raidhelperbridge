@@ -9,6 +9,7 @@ const makeRoster = (count: number, cls = 'WARRIOR' as const): RosterEntry[] =>
     class: cls,
     role: 'mdps' as const,
     spec: undefined,
+    signupStatus: 'confirmed' as const,
     wowCharacter: `Player${i}`,
   }));
 
