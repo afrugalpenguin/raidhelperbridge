@@ -5,6 +5,12 @@ Before each release:
 - [ ] Update `CHANGELOG.md` (use `**vX.Y.Z**` bold text, no `###` subheadings)
 - [ ] Commit with message: `chore(release): bump version to X.Y.Z`
 - [ ] Create and push tag: `git tag vX.Y.Z && git push origin vX.Y.Z`
+- [ ] GitHub Actions will auto-package and upload to CurseForge + create a GitHub Release
+
+## Setup
+
+- **CurseForge project ID**: Replace `000000` in `.github/workflows/release.yml` once the project is created
+- **CF_API_KEY secret**: Add your CurseForge API token as a repository secret in GitHub Settings > Secrets
 
 ## Version Tagging Rules
 

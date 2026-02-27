@@ -1,0 +1,16 @@
+package-as: RaidHelperBridge
+
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown
+
+ignore:
+  - README.md
+  - CHANGELOG.md
+  - RELEASE.md
+  - .gitignore
+  - .pkgmeta
+  - .github
+  - Bridge
+  - docs
+  - "*.md"
