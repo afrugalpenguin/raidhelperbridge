@@ -9,6 +9,7 @@ export interface GroupBuff {
 }
 
 const BUFFS: GroupBuff[] = [
+  // --- Any-class auras ---
   {
     id: 'bloodlust',
     name: 'Bloodlust / Heroism',
@@ -16,16 +17,53 @@ const BUFFS: GroupBuff[] = [
     match: (cls) => cls === 'SHAMAN',
   },
   {
-    id: 'moonkin',
-    name: 'Moonkin Aura',
-    icon: 'spell_nature_starfall',
-    match: (cls, spec) => cls === 'DRUID' && !!spec && spec.toLowerCase().includes('balance'),
+    id: 'windfury',
+    name: 'Windfury Totem',
+    icon: 'spell_nature_windfury',
+    match: (cls) => cls === 'SHAMAN',
+  },
+  {
+    id: 'wrathofair',
+    name: 'Wrath of Air Totem',
+    icon: 'spell_nature_slowingtotem',
+    match: (cls) => cls === 'SHAMAN',
+  },
+  {
+    id: 'manaspring',
+    name: 'Mana Spring Totem',
+    icon: 'spell_nature_manaregentotem',
+    match: (cls) => cls === 'SHAMAN',
   },
   {
     id: 'trueshot',
     name: 'Trueshot Aura',
     icon: 'ability_trueshot',
     match: (cls) => cls === 'HUNTER',
+  },
+  {
+    id: 'battleshout',
+    name: 'Battle Shout',
+    icon: 'ability_warrior_battleshout',
+    match: (cls) => cls === 'WARRIOR',
+  },
+  {
+    id: 'devotion',
+    name: 'Devotion Aura',
+    icon: 'spell_holy_devotionaura',
+    match: (cls) => cls === 'PALADIN',
+  },
+  // --- Spec-specific ---
+  {
+    id: 'moonkin',
+    name: 'Moonkin Aura',
+    icon: 'spell_nature_starfall',
+    match: (cls, spec) => cls === 'DRUID' && !!spec && spec.toLowerCase().includes('balance'),
+  },
+  {
+    id: 'lotp',
+    name: 'Leader of the Pack',
+    icon: 'ability_druid_demoralizingroar',
+    match: (cls, spec) => cls === 'DRUID' && !!spec && spec.toLowerCase().includes('feral'),
   },
   {
     id: 'unleashed',
@@ -40,10 +78,22 @@ const BUFFS: GroupBuff[] = [
     match: (cls, spec) => cls === 'SHAMAN' && !!spec && spec.toLowerCase().includes('elemental'),
   },
   {
-    id: 'lotp',
-    name: 'Leader of the Pack',
-    icon: 'ability_druid_demoralizingroar',
-    match: (cls, spec) => cls === 'DRUID' && !!spec && spec.toLowerCase().includes('feral'),
+    id: 'vampirictouch',
+    name: 'Vampiric Touch',
+    icon: 'spell_holy_stoicism',
+    match: (cls, spec) => cls === 'PRIEST' && !!spec && spec.toLowerCase().includes('shadow'),
+  },
+  {
+    id: 'ferocious',
+    name: 'Ferocious Inspiration',
+    icon: 'ability_hunter_ferociousinspiration',
+    match: (cls, spec) => cls === 'HUNTER' && !!spec && spec.toLowerCase().includes('beast'),
+  },
+  {
+    id: 'sanctity',
+    name: 'Sanctity Aura',
+    icon: 'spell_holy_mindvision',
+    match: (cls, spec) => cls === 'PALADIN' && !!spec && spec.toLowerCase().includes('retribution'),
   },
 ];
 

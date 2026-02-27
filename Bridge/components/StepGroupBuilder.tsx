@@ -340,7 +340,7 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
               </div>
 
               {/* Buff icons */}
-              <div className="flex gap-1 mt-2 pt-2 border-t border-gray-800">
+              <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-gray-800">
                 {resolveGroupBuffs(group.players, roster).map(({ buff, active, provider }) => (
                   <img
                     key={buff.id}
