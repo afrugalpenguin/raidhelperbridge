@@ -114,7 +114,7 @@ local function CreateTab()
     local panelHeight = (#BUTTONS * BTN_HEIGHT) + (PANEL_PAD * 2)
     panel = CreateFrame("Frame", "RHBTabPanel", tab, "BackdropTemplate")
     panel:SetSize(BTN_WIDTH + PANEL_PAD * 2, panelHeight)
-    panel:SetPoint("TOP", tab, "BOTTOM", 0, 0)
+    panel:SetPoint("TOPLEFT", tab, "BOTTOMLEFT", 0, 0)
     panel:SetFrameStrata("HIGH")
     panel:EnableMouse(true)
     panel:SetBackdrop({
