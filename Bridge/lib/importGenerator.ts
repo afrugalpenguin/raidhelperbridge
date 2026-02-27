@@ -6,87 +6,12 @@
  */
 
 import pako from 'pako';
-import { 
-    ImportPayload, 
-    RaidEvent, 
-    CCTemplate, 
+import {
+    ImportPayload,
+    RaidEvent,
+    CCTemplate,
     GroupTemplate,
-    CCType,
-    RaidMarker,
-    WowClass
 } from './types';
-
-// CC abilities each class can use
-const CLASS_CC_ABILITIES: Record<WowClass, CCType[]> = {
-    MAGE: ['polymorph'],
-    WARLOCK: ['banish', 'fear', 'seduce'],
-    PRIEST: ['shackle', 'mindcontrol'],
-    DRUID: ['hibernate', 'cyclone'],
-    ROGUE: ['sap'],
-    HUNTER: ['freezingtrap', 'wyvern'],
-    PALADIN: ['turnundead', 'repentance'],
-    WARRIOR: [],
-    SHAMAN: [],
-};
-
-/**
- * Resolve CC template against actual signups
- * Turns "1st Mage" into "Frostbolt" (actual player name)
- */
-export function resolveCCAssignments(
-    event: RaidEvent,
-    template: CCTemplate
-): ImportPayload['ccAssignments'] {
-    const assignments: ImportPayload['ccAssignments'] = [];
-    
-    // Group players by class
-    const playersByClass: Record<WowClass, string[]> = {
-        WARRIOR: [], PALADIN: [], HUNTER: [], ROGUE: [],
-        PRIEST: [], SHAMAN: [], MAGE: [], WARLOCK: [], DRUID: []
-    };
-    
-    for (const signup of event.signups) {
-        if (signup.status === 'confirmed' || signup.status === 'tentative') {
-            const name = signup.wowCharacter || signup.discordName;
-            playersByClass[signup.class].push(name);
-        }
-    }
-    
-    // Process each marker's rules
-    for (const rule of template.rules) {
-        const markerAssignments: { ccType: CCType; playerName: string }[] = [];
-        
-        for (const priority of rule.priority) {
-            // Find which classes can use this CC type
-            const capableClasses = Object.entries(CLASS_CC_ABILITIES)
-                .filter(([_, abilities]) => abilities.includes(priority.ccType))
-                .map(([cls]) => cls as WowClass);
-            
-            // Find the Nth player of a capable class
-            for (const cls of capableClasses) {
-                const players = playersByClass[cls];
-                const playerIndex = priority.classOrder - 1; // 1-indexed to 0-indexed
-                
-                if (players.length > playerIndex) {
-                    markerAssignments.push({
-                        ccType: priority.ccType,
-                        playerName: players[playerIndex],
-                    });
-                    break; // Found a player for this priority level
-                }
-            }
-        }
-        
-        if (markerAssignments.length > 0) {
-            assignments.push({
-                marker: rule.marker,
-                assignments: markerAssignments,
-            });
-        }
-    }
-    
-    return assignments;
-}
 
 /**
  * Build the import payload from event data and templates
@@ -117,7 +42,6 @@ export function buildImportPayload(
         payload.ccAssignments = resolvedCC;
     } else if (ccTemplate) {
         payload.ccTemplate = ccTemplate;
-        payload.ccAssignments = resolveCCAssignments(event, ccTemplate);
     }
 
     if (groupAssignments) {
@@ -201,8 +125,10 @@ export function generateImportSummary(payload: ImportPayload): string {
         const markerNames = ['Star', 'Circle', 'Diamond', 'Triangle', 'Moon', 'Square', 'Cross', 'Skull'];
         for (const assignment of payload.ccAssignments) {
             const markerName = markerNames[assignment.marker - 1];
-            for (const cc of assignment.assignments) {
-                lines.push(`  ${markerName}: ${cc.playerName} (${cc.ccType})`);
+            for (let i = 0; i < assignment.assignments.length; i++) {
+                const cc = assignment.assignments[i];
+                const label = i === 0 ? '' : ' [fallback]';
+                lines.push(`  ${markerName}: ${cc.playerName} (${cc.ccType})${label}`);
             }
         }
     }
@@ -219,63 +145,3 @@ export function generateImportSummary(payload: ImportPayload): string {
     return lines.join('\n');
 }
 
-// Default CC template for TBC raids
-export const DEFAULT_CC_TEMPLATE: CCTemplate = {
-    name: 'TBC Default',
-    description: 'Standard CC priority for TBC raids',
-    rules: [
-        {
-            marker: 6, // Square
-            priority: [
-                { ccType: 'polymorph', classOrder: 1 },
-                { ccType: 'freezingtrap', classOrder: 1 },
-            ],
-        },
-        {
-            marker: 5, // Moon
-            priority: [
-                { ccType: 'polymorph', classOrder: 2 },
-                { ccType: 'sap', classOrder: 1 },
-            ],
-        },
-        {
-            marker: 4, // Triangle
-            priority: [
-                { ccType: 'shackle', classOrder: 1 },
-                { ccType: 'banish', classOrder: 1 },
-            ],
-        },
-        {
-            marker: 3, // Diamond
-            priority: [
-                { ccType: 'freezingtrap', classOrder: 2 },
-                { ccType: 'hibernate', classOrder: 1 },
-            ],
-        },
-    ],
-};
-
-// Default group templates for TBC
-export const DEFAULT_GROUP_TEMPLATES: GroupTemplate[] = [
-    {
-        name: 'Melee Group',
-        description: 'Melee DPS with Windfury',
-        priorityBuffs: ['windfury', 'battleshout', 'leaderofthepack'],
-        preferredClasses: ['WARRIOR', 'ROGUE'],
-        preferredRoles: ['mdps'],
-    },
-    {
-        name: 'Caster Group',
-        description: 'Casters with Shadow Priest',
-        priorityBuffs: ['totemofwrath', 'moonkinaura', 'vampirictouch'],
-        preferredClasses: ['MAGE', 'WARLOCK'],
-        preferredRoles: ['rdps'],
-    },
-    {
-        name: 'Healer Group',
-        description: 'Healers with Mana Tide',
-        priorityBuffs: ['manatide', 'manaspring', 'treeoflife'],
-        preferredClasses: ['PRIEST', 'DRUID', 'PALADIN', 'SHAMAN'],
-        preferredRoles: ['healer'],
-    },
-];

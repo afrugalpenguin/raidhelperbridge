@@ -86,7 +86,7 @@ export default function Home() {
     <div className="min-h-screen bg-gray-900 text-white p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-1">Raid Helper Bridge</h1>
-        <p className="text-gray-400 mb-8">Import Raid-Helper signups into your WoW addon</p>
+        <p className="text-gray-400 mb-8">Import Raid-Helper signups into the Raid Helper Bridge WoW addon</p>
 
         <StepFetchEvent
           urlInput={urlInput}

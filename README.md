@@ -58,21 +58,37 @@ RaidHelperBridge/
 │   │   ├── BuffProviders.lua # ~30 TBC raid buffs with class/spec info
 │   │   └── MarkerInfo.lua    # Raid markers 1-8
 │   ├── UI/
-│   │   ├── MainFrame.lua     # Minimap button
+│   │   ├── MainFrame.lua     # LDB minimap button
 │   │   └── CCFrame.lua       # CC assignment display frames
 │   └── Libs/
-│       ├── LibStub/          # Library registration (included)
-│       └── LibDeflate/       # Decompression (included)
+│       ├── LibStub/          # Library registration
+│       ├── LibDeflate/       # Decompression
+│       ├── CallbackHandler-1.0/
+│       ├── LibDataBroker-1.1/
+│       ├── LibDBIcon-1.0/    # Minimap button positioning
+│       └── json.lua          # rxi/json.lua parser
 │
 └── Bridge/                   # Web App (Next.js/TypeScript)
-    ├── package.json
-    ├── app/                  # Next.js pages
+    ├── app/
+    │   ├── page.tsx          # 5-step orchestrator
+    │   └── api/event/        # Raid-Helper API proxy (rate-limited)
+    ├── components/
+    │   ├── StepFetchEvent.tsx
+    │   ├── StepMapNames.tsx
+    │   ├── StepCCRules.tsx
+    │   ├── StepGroupBuilder.tsx
+    │   └── StepGenerateImport.tsx
     ├── lib/
-    │   ├── types.ts          # Shared type definitions
+    │   ├── types.ts           # Shared type definitions
+    │   ├── rosterTypes.ts     # EventData, RosterEntry interfaces
     │   ├── importGenerator.ts # Import string compression/generation
-    │   └── mockData.ts       # Mock Karazhan raid for testing
+    │   ├── ccResolver.ts      # CC ability data + auto-assignment
+    │   ├── groupSolver.ts     # Group presets + auto-assignment
+    │   ├── characterMappings.ts # localStorage persistence
+    │   ├── constants.ts       # CLASS_COLORS, ROLE_LABELS
+    │   └── mockData.ts        # Mock Karazhan raid for testing
     └── scripts/
-        └── generate-mock.ts  # CLI: generate a test import string
+        └── generate-mock.ts   # CLI: generate a test import string
 ```
 
 ## Installation
@@ -133,13 +149,15 @@ This outputs an `!RHB!...` string you can paste into the addon's import dialog, 
 
 1. **Create event** in Raid-Helper on Discord
 2. **Wait for signups**
-3. **Open Bridge web app**, select your server and event
-4. **Configure CC rules** (e.g., Square = poly, Triangle = shackle)
-5. **Generate import string** and copy it
-6. **In WoW**: `/rhb import` and paste the string
-7. **Send invites**: `/rhb invite`
-8. **Sort groups**: `/rhb sort`
-9. **During raid**: Mark mobs with raid markers — assigned players get whispered automatically
+3. **Open Bridge web app** at [raidhelperbridge.vercel.app](https://raidhelperbridge.vercel.app), paste your event URL
+4. **Map names** — link Discord usernames to WoW character names (saved automatically)
+5. **Configure CC rules** — assign markers to players with class-filtered abilities
+6. **Build groups** — drag-and-drop group assignment or use TBC presets
+7. **Generate import string** and copy it
+8. **In WoW**: `/rhb import` and paste the string
+9. **Send invites**: `/rhb invite`
+10. **Sort groups**: `/rhb sort`
+11. **During raid**: Mark mobs with raid markers — assigned players get whispered automatically
 
 ## How CC Assignment Works
 
@@ -201,22 +219,25 @@ Decompressed JSON payload:
 
 Use `/rhb mock` in-game to load a 10-player Karazhan raid with CC assignments. This lets you test all addon features without needing the web app running.
 
-### Raid-Helper Data Access
+### Deployment
 
-**Option 1: Raid-Helper API (preferred)** — API docs at `raid-helper.dev/documentation/api`. May require premium.
+The Bridge web app is deployed on [Vercel](https://vercel.com) with root directory set to `Bridge/`. Pushes to `main` trigger auto-deployment.
 
-**Option 2: Discord embed parsing (fallback)** — A Discord bot reads Raid-Helper embed messages and extracts signup data. Needs Read Messages + Read Message History permissions.
+Live: [raidhelperbridge.vercel.app](https://raidhelperbridge.vercel.app)
 
 ## TODO
 
 - [x] Raid-Helper API integration
 - [x] Bridge web app UI (event selector, name mapping, import string generator)
 - [x] CC assignment display frames (player + leader views)
-- [ ] Full in-game CC template editor UI
-- [ ] Full in-game group template editor UI
-- [ ] Minimap button with proper LDB positioning
-- [ ] Character name mapping persistence (Discord name -> WoW name)
-- [ ] Bridge CC rule builder UI
+- [x] Minimap button with LDB positioning
+- [x] Character name mapping persistence (Discord name -> WoW name)
+- [x] Bridge CC rule builder UI
+- [x] Bridge group template builder UI
+- [x] Vitest test suite
+- [x] Vercel deployment
+- [ ] Full in-game CC template editor UI (v2)
+- [ ] Full in-game group template editor UI (v2)
 - [ ] End-to-end in-game testing
 
 ## License
