@@ -3,6 +3,7 @@ import type { RosterEntry } from '@/lib/rosterTypes';
 import type { GroupAssignment, StoredGroupTemplate } from '@/lib/groupSolver';
 import { autoAssignGroups, loadGroupTemplates, saveGroupTemplate, deleteGroupTemplate, applyGroupTemplate } from '@/lib/groupSolver';
 import { CLASS_COLORS, ROLE_LABELS } from '@/lib/constants';
+import { resolveGroupBuffs } from '@/lib/groupBuffs';
 import type { RaidRole } from '@/lib/types';
 
 interface Props {
@@ -335,6 +336,19 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
                   >
                     ---
                   </div>
+                ))}
+              </div>
+
+              {/* Buff icons */}
+              <div className="flex gap-1 mt-2 pt-2 border-t border-gray-800">
+                {resolveGroupBuffs(group.players, roster).map(({ buff, active, provider }) => (
+                  <img
+                    key={buff.id}
+                    src={`https://wow.zamimg.com/images/wow/icons/small/${buff.icon}.jpg`}
+                    alt={buff.name}
+                    title={active ? `${buff.name} (${provider})` : `${buff.name} — missing`}
+                    className={`w-4 h-4 rounded-sm ${active ? '' : 'opacity-25 grayscale'}`}
+                  />
                 ))}
               </div>
             </div>
