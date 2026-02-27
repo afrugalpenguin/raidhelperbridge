@@ -17,8 +17,8 @@ function extractEventId(input: string): string | null {
   const trimmed = input.trim();
   // Plain numeric ID
   if (/^\d+$/.test(trimmed)) return trimmed;
-  // URL like raid-helper.dev/event/<id> or raid-helper.dev/events/<id>
-  const match = trimmed.match(/raid-helper\.dev\/events?\/(\d+)/);
+  // URL like raid-helper.dev/event/<id>, /events/<id>, or /raidplan/<id>
+  const match = trimmed.match(/raid-helper\.dev\/(?:events?|raidplan)\/(\d+)/);
   return match ? match[1] : null;
 }
 
