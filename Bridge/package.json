@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "next": "^14.0.0",
@@ -18,11 +20,13 @@
     "@types/node": "^20.0.0",
     "@types/pako": "^2.0.4",
     "@types/react": "^18.2.0",
-    "discord.js": "^14.14.0",
+    "@vitejs/plugin-react": "^5.1.4",
     "autoprefixer": "^10.4.24",
+    "discord.js": "^14.14.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.19",
     "tsx": "^4.21.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^4.0.18"
   }
 }
