@@ -4,6 +4,7 @@ node_modules/
 # Next.js build
 Bridge/.next/
 Bridge/out/
+Bridge/tsconfig.tsbuildinfo
 
 # Next.js generated
 Bridge/next-env.d.ts

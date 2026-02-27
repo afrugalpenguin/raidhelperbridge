@@ -2,7 +2,7 @@
 ## Title: Raid Helper Bridge
 ## Notes: Bridges Discord Raid-Helper signups with in-game raid management
 ## Author: Mac
-## Version: 1.0.0
+## Version: 1.0.10
 ## SavedVariables: RaidHelperBridgeDB
 ## SavedVariablesPerCharacter: RaidHelperBridgeCharDB
 
