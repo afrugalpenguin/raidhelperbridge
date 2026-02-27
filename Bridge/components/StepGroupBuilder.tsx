@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import type { RosterEntry } from '@/lib/rosterTypes';
 import type { GroupAssignment } from '@/lib/groupSolver';
 import { autoAssignGroups } from '@/lib/groupSolver';
@@ -10,6 +10,8 @@ interface Props {
   onChange: (groups: GroupAssignment[]) => void;
 }
 
+type DragSource = { groupIndex: number | 'pool'; playerName: string };
+
 function getPlayerName(entry: RosterEntry): string {
   return entry.wowCharacter.trim() || entry.discordName;
 }
@@ -19,9 +21,23 @@ function getPlayerClass(roster: RosterEntry[], playerName: string): string | nul
   return entry ? entry.class : null;
 }
 
+function encodeDrag(source: DragSource): string {
+  return JSON.stringify(source);
+}
+
+function decodeDrag(e: React.DragEvent): DragSource | null {
+  try {
+    return JSON.parse(e.dataTransfer.getData('text/plain'));
+  } catch {
+    return null;
+  }
+}
+
 export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
-  const [dragSource, setDragSource] = useState<{ groupIndex: number | 'pool'; playerName: string } | null>(null);
-  const [dropTarget, setDropTarget] = useState<number | 'pool' | null>(null);
+  const [dropGroupTarget, setDropGroupTarget] = useState<number | 'pool' | null>(null);
+  const [dropPlayerTarget, setDropPlayerTarget] = useState<string | null>(null);
+  const [draggedPlayer, setDraggedPlayer] = useState<string | null>(null);
+  const dragSourceRef = useRef<DragSource | null>(null);
 
   // Compute unassigned players
   const assignedNames = new Set(groups.flatMap(g => g.players));
@@ -34,65 +50,140 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
   };
 
   const handleLabelChange = (groupIndex: number, label: string) => {
-    const updated = groups.map((g, i) =>
-      i === groupIndex ? { ...g, label } : g
-    );
-    onChange(updated);
+    onChange(groups.map((g, i) => i === groupIndex ? { ...g, label } : g));
   };
 
-  // Drag handlers — encode source in dataTransfer for reliability
-  const handleDragStart = (groupIndex: number | 'pool', playerName: string) => (e: React.DragEvent) => {
-    setDragSource({ groupIndex, playerName });
+  // --- Drag start ---
+  const onDragStart = (groupIndex: number | 'pool', playerName: string) => (e: React.DragEvent) => {
+    const source: DragSource = { groupIndex, playerName };
+    dragSourceRef.current = source;
+    setDraggedPlayer(playerName);
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('application/json', JSON.stringify({ groupIndex, playerName }));
+    e.dataTransfer.setData('text/plain', encodeDrag(source));
   };
 
-  const handleDragOver = (targetIndex: number | 'pool') => (e: React.DragEvent) => {
+  const onDragEnd = () => {
+    dragSourceRef.current = null;
+    setDraggedPlayer(null);
+    setDropGroupTarget(null);
+    setDropPlayerTarget(null);
+  };
+
+  // --- Drop on a group (move player into it) ---
+  const onGroupDragOver = (gi: number | 'pool') => (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    setDropTarget(targetIndex);
+    setDropGroupTarget(gi);
+    setDropPlayerTarget(null);
   };
 
-  const handleDragLeave = () => {
-    setDropTarget(null);
+  const onGroupDragLeave = () => {
+    setDropGroupTarget(null);
   };
 
-  const handleDrop = (targetIndex: number | 'pool') => (e: React.DragEvent) => {
+  const onGroupDrop = (targetGroupIndex: number | 'pool') => (e: React.DragEvent) => {
     e.preventDefault();
-    setDropTarget(null);
-    setDragSource(null);
+    e.stopPropagation();
+    setDropGroupTarget(null);
+    setDropPlayerTarget(null);
 
-    let sourceIndex: number | 'pool';
-    let playerName: string;
-    try {
-      const data = JSON.parse(e.dataTransfer.getData('application/json'));
-      sourceIndex = data.groupIndex;
-      playerName = data.playerName;
-    } catch {
-      return;
-    }
+    const source = decodeDrag(e);
+    if (!source) return;
+    if (source.groupIndex === targetGroupIndex) return;
 
-    // No-op if dropping on same group
-    if (sourceIndex === targetIndex) return;
-
-    // Check target capacity (groups max 5, pool unlimited)
-    if (targetIndex !== 'pool' && groups[targetIndex].players.length >= 5) return;
-
+    // Move: remove from source, add to target
     const updated = groups.map((g, i) => {
-      const isSource = i === sourceIndex;
-      const isTarget = i === targetIndex;
-      if (isSource && isTarget) return g;
-      if (isSource) return { ...g, players: g.players.filter(p => p !== playerName) };
-      if (isTarget) return { ...g, players: [...g.players, playerName] };
-      return g;
+      let players = [...g.players];
+      if (i === source.groupIndex) {
+        players = players.filter(p => p !== source.playerName);
+      }
+      if (i === targetGroupIndex) {
+        players = [...players, source.playerName];
+      }
+      return { ...g, players };
     });
 
     onChange(updated);
   };
 
-  const handleDragEnd = () => {
-    setDragSource(null);
-    setDropTarget(null);
+  // --- Drop on a player (swap) ---
+  const onPlayerDragOver = (targetGroupIndex: number | 'pool', targetPlayer: string) => (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    setDropPlayerTarget(targetPlayer);
+    setDropGroupTarget(targetGroupIndex);
+  };
+
+  const onPlayerDragLeave = (e: React.DragEvent) => {
+    e.stopPropagation();
+    setDropPlayerTarget(null);
+  };
+
+  const onPlayerDrop = (targetGroupIndex: number | 'pool', targetPlayer: string) => (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDropGroupTarget(null);
+    setDropPlayerTarget(null);
+
+    const source = decodeDrag(e);
+    if (!source) return;
+    if (source.playerName === targetPlayer) return;
+
+    // Swap the two players in their respective groups
+    const updated = groups.map((g, i) => {
+      let players = g.players.map(p => {
+        if (p === source.playerName) return targetPlayer;
+        if (p === targetPlayer) return source.playerName;
+        return p;
+      });
+      // If source was from pool, just add source player where target was
+      // and remove target (target goes to pool automatically)
+      if (source.groupIndex === 'pool' && i === targetGroupIndex) {
+        players = g.players.map(p => p === targetPlayer ? source.playerName : p);
+      }
+      return { ...g, players };
+    });
+
+    onChange(updated);
+  };
+
+  // --- Render helpers ---
+  const renderPlayer = (name: string, groupIndex: number | 'pool') => {
+    const cls = getPlayerClass(roster, name);
+    const isDragging = draggedPlayer === name;
+    const isSwapTarget = dropPlayerTarget === name;
+    // Highlight the dragged player too when hovering over a swap target
+    const isSwapSource = isDragging && dropPlayerTarget !== null;
+    const highlighted = isSwapTarget || isSwapSource;
+
+    return (
+      <div
+        key={name}
+        draggable
+        onDragStart={onDragStart(groupIndex, name)}
+        onDragEnd={onDragEnd}
+        onDragOver={onPlayerDragOver(groupIndex, name)}
+        onDragLeave={onPlayerDragLeave}
+        onDrop={onPlayerDrop(groupIndex, name)}
+        className={`flex items-center gap-2 px-2 py-1 rounded text-sm cursor-grab active:cursor-grabbing transition-all ${
+          highlighted
+            ? 'bg-blue-600/30 ring-1 ring-blue-500'
+            : 'bg-gray-800 hover:bg-gray-700'
+        } ${isDragging && !isSwapSource ? 'opacity-40' : ''}`}
+      >
+        <span
+          className="w-2 h-2 rounded-full flex-shrink-0"
+          style={{ backgroundColor: cls ? CLASS_COLORS[cls as keyof typeof CLASS_COLORS] : '#888' }}
+        />
+        <span
+          className="truncate"
+          style={{ color: cls ? CLASS_COLORS[cls as keyof typeof CLASS_COLORS] : '#ccc' }}
+        >
+          {name}
+        </span>
+      </div>
+    );
   };
 
   return (
@@ -107,116 +198,73 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
         </button>
       </div>
       <p className="text-gray-400 text-sm mb-4">
-        Drag players between groups to customize assignments.
+        Drag to a group to move, or onto a player to swap.
       </p>
 
       {/* Group cards grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
-        {groups.map((group, gi) => (
-          <div
-            key={gi}
-            className={`bg-gray-900 rounded-lg p-3 transition-colors ${
-              dropTarget === gi ? 'ring-2 ring-blue-500' : ''
-            }`}
-            onDragOver={handleDragOver(gi)}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop(gi)}
-          >
-            {/* Group header */}
-            <div className="flex items-center justify-between mb-2">
-              <input
-                type="text"
-                value={group.label}
-                onChange={(e) => handleLabelChange(gi, e.target.value)}
-                className="bg-transparent border-b border-transparent hover:border-gray-600 focus:border-blue-500 focus:outline-none text-sm font-medium w-32 px-0"
-              />
-              <span className="text-gray-500 text-xs">{group.players.length}/5</span>
-            </div>
+        {groups.map((group, gi) => {
+          const isOver = dropGroupTarget === gi && !dropPlayerTarget;
+          const overLimit = group.players.length > 5;
 
-            {/* Player list */}
-            <div className="space-y-1 min-h-[2.5rem]">
-              {group.players.map((name) => {
-                const cls = getPlayerClass(roster, name);
-                const isDragging = dragSource?.playerName === name && dragSource?.groupIndex === gi;
-                return (
+          return (
+            <div
+              key={gi}
+              className={`bg-gray-900 rounded-lg p-3 transition-colors ${
+                isOver ? 'ring-2 ring-blue-500' : ''
+              }`}
+              onDragOver={onGroupDragOver(gi)}
+              onDragLeave={onGroupDragLeave}
+              onDrop={onGroupDrop(gi)}
+            >
+              {/* Group header */}
+              <div className="flex items-center justify-between mb-2">
+                <input
+                  type="text"
+                  value={group.label}
+                  onChange={(e) => handleLabelChange(gi, e.target.value)}
+                  className="bg-transparent border-b border-transparent hover:border-gray-600 focus:border-blue-500 focus:outline-none text-sm font-medium w-32 px-0"
+                />
+                <span className={`text-xs ${overLimit ? 'text-red-400 font-bold' : 'text-gray-500'}`}>
+                  {group.players.length}/5
+                </span>
+              </div>
+
+              {/* Player list */}
+              <div className="space-y-1 min-h-[2.5rem]">
+                {group.players.map((name) => renderPlayer(name, gi))}
+
+                {/* Empty slot indicators */}
+                {Array.from({ length: Math.max(0, 5 - group.players.length) }).map((_, si) => (
                   <div
-                    key={name}
-                    draggable
-                    onDragStart={handleDragStart(gi, name)}
-                    onDragEnd={handleDragEnd}
-                    className={`flex items-center gap-2 px-2 py-1 rounded text-sm cursor-grab active:cursor-grabbing bg-gray-800 hover:bg-gray-700 transition-opacity ${
-                      isDragging ? 'opacity-40' : ''
-                    }`}
+                    key={`empty-${si}`}
+                    className="border border-dashed border-gray-700 rounded px-2 py-1 text-gray-600 text-sm text-center"
                   >
-                    <span
-                      className="w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: cls ? CLASS_COLORS[cls as keyof typeof CLASS_COLORS] : '#888' }}
-                    />
-                    <span
-                      className="truncate"
-                      style={{ color: cls ? CLASS_COLORS[cls as keyof typeof CLASS_COLORS] : '#ccc' }}
-                    >
-                      {name}
-                    </span>
+                    ---
                   </div>
-                );
-              })}
-
-              {/* Empty slot indicators */}
-              {Array.from({ length: Math.max(0, 5 - group.players.length) }).map((_, si) => (
-                <div
-                  key={`empty-${si}`}
-                  className="border border-dashed border-gray-700 rounded px-2 py-1 text-gray-600 text-sm text-center"
-                >
-                  ---
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Unassigned pool */}
       {unassigned.length > 0 && (
         <div
           className={`bg-gray-900 rounded-lg p-3 transition-colors ${
-            dropTarget === 'pool' ? 'ring-2 ring-blue-500' : ''
+            dropGroupTarget === 'pool' && !dropPlayerTarget ? 'ring-2 ring-blue-500' : ''
           }`}
-          onDragOver={handleDragOver('pool')}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop('pool')}
+          onDragOver={onGroupDragOver('pool')}
+          onDragLeave={onGroupDragLeave}
+          onDrop={onGroupDrop('pool')}
         >
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-400">Unassigned</span>
             <span className="text-gray-500 text-xs">{unassigned.length} player{unassigned.length !== 1 ? 's' : ''}</span>
           </div>
           <div className="flex flex-wrap gap-1">
-            {unassigned.map((name) => {
-              const cls = getPlayerClass(roster, name);
-              const isDragging = dragSource?.playerName === name && dragSource?.groupIndex === 'pool';
-              return (
-                <div
-                  key={name}
-                  draggable
-                  onDragStart={handleDragStart('pool', name)}
-                  onDragEnd={handleDragEnd}
-                  className={`flex items-center gap-1.5 px-2 py-1 rounded text-sm cursor-grab active:cursor-grabbing bg-gray-800 hover:bg-gray-700 transition-opacity ${
-                    isDragging ? 'opacity-40' : ''
-                  }`}
-                >
-                  <span
-                    className="w-2 h-2 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: cls ? CLASS_COLORS[cls as keyof typeof CLASS_COLORS] : '#888' }}
-                  />
-                  <span
-                    className="truncate"
-                    style={{ color: cls ? CLASS_COLORS[cls as keyof typeof CLASS_COLORS] : '#ccc' }}
-                  >
-                    {name}
-                  </span>
-                </div>
-              );
-            })}
+            {unassigned.map((name) => renderPlayer(name, 'pool'))}
           </div>
         </div>
       )}
