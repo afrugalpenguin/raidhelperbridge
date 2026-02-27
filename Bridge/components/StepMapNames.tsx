@@ -22,6 +22,7 @@ export default function StepMapNames({ roster, onUpdateName }: Props) {
         <table className="w-full text-sm">
           <thead>
             <tr className="text-gray-400 text-left border-b border-gray-700">
+              <th className="pb-2 pr-2 w-8">#</th>
               <th className="pb-2 pr-4">Discord Name</th>
               <th className="pb-2 pr-4">Class</th>
               <th className="pb-2 pr-4">Role / Spec</th>
@@ -31,6 +32,7 @@ export default function StepMapNames({ roster, onUpdateName }: Props) {
           <tbody>
             {roster.map((entry, i) => (
               <tr key={entry.discordId + i} className="border-b border-gray-700/50">
+                <td className="py-2 pr-2 text-gray-500">{i + 1}</td>
                 <td className="py-2 pr-4" style={{ color: CLASS_COLORS[entry.class] }}>
                   {entry.discordName}
                 </td>
