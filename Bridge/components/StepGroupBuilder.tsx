@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, forwardRef } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, forwardRef } from 'react';
 import type { RosterEntry } from '@/lib/rosterTypes';
 import type { GroupAssignment, StoredGroupTemplate } from '@/lib/groupSolver';
 import { autoAssignGroups, loadGroupTemplates, saveGroupTemplate, deleteGroupTemplate, applyGroupTemplate } from '@/lib/groupSolver';
@@ -24,6 +24,28 @@ function getPlayerName(entry: RosterEntry): string {
 function getPlayerClass(roster: RosterEntry[], playerName: string): string | null {
   const entry = roster.find(r => getPlayerName(r) === playerName);
   return entry ? entry.class : null;
+}
+
+/** Count how many buffs are active in a group (considering overrides). */
+function countGroupBuffs(players: string[], roster: RosterEntry[], overrides: Set<string>): number {
+  const resolved = resolveGroupBuffs(players, roster, overrides);
+  return resolved.filter(b => {
+    const hasOverride = players.some(p => overrides.has(`${p}_${b.buff.id}`));
+    return hasOverride ? !b.active : b.active;
+  }).length;
+}
+
+/** Count total buff coverage across all groups. */
+function countTotalBuffs(groups: GroupAssignment[], roster: RosterEntry[], overrides: Set<string>): number {
+  return groups.reduce((sum, g) => sum + countGroupBuffs(g.players, roster, overrides), 0);
+}
+
+/** Calculate how many NEW buffs a player would bring to a group. */
+function buffGainForGroup(playerName: string, group: GroupAssignment, roster: RosterEntry[], overrides: Set<string>): number {
+  const current = countGroupBuffs(group.players, roster, overrides);
+  if (group.players.includes(playerName)) return 0;
+  const withPlayer = countGroupBuffs([...group.players, playerName], roster, overrides);
+  return withPlayer - current;
 }
 
 function encodeDrag(source: DragSource): string {
@@ -246,6 +268,84 @@ const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilde
     onChange(groups.map((g, i) => i === groupIndex ? { ...g, label } : g));
   };
 
+  // Buff gain hints: when dragging, compute how many new buffs each group would gain
+  const dragBuffGains = useMemo(() => {
+    if (!draggedPlayer) return null;
+    const gains = new Map<number, number>();
+    groups.forEach((g, gi) => {
+      const gain = buffGainForGroup(draggedPlayer, g, roster, buffOverrides);
+      if (gain > 0) gains.set(gi, gain);
+    });
+    return gains;
+  }, [draggedPlayer, groups, roster, buffOverrides]);
+
+  // Greedy optimizer: try swaps between groups to maximize total buff coverage
+  const handleOptimize = () => {
+    pushSnapshot();
+    let current = groups.map(g => ({ ...g, players: [...g.players] }));
+    let bestScore = countTotalBuffs(current, roster, buffOverrides);
+    let improved = true;
+
+    // Cap iterations to avoid hanging on large rosters
+    let iterations = 0;
+    const MAX_ITERATIONS = 200;
+
+    while (improved && iterations < MAX_ITERATIONS) {
+      improved = false;
+      iterations++;
+
+      // Try every pair of players in different groups
+      for (let gi = 0; gi < current.length && !improved; gi++) {
+        for (let gj = gi + 1; gj < current.length && !improved; gj++) {
+          for (let pi = 0; pi < current[gi].players.length && !improved; pi++) {
+            for (let pj = 0; pj < current[gj].players.length; pj++) {
+              // Try swapping player pi from group gi with player pj from group gj
+              const trial = current.map(g => ({ ...g, players: [...g.players] }));
+              const tmp = trial[gi].players[pi];
+              trial[gi].players[pi] = trial[gj].players[pj];
+              trial[gj].players[pj] = tmp;
+
+              const score = countTotalBuffs(trial, roster, buffOverrides);
+              if (score > bestScore) {
+                current = trial;
+                bestScore = score;
+                improved = true;
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      // Also try moving unassigned players into groups with open slots
+      if (!improved) {
+        const assignedNames = new Set(current.flatMap(g => g.players));
+        const unassignedPlayers = roster
+          .filter(r => r.signupStatus === 'confirmed')
+          .map(getPlayerName)
+          .filter(name => !assignedNames.has(name));
+
+        for (const name of unassignedPlayers) {
+          for (let gi = 0; gi < current.length; gi++) {
+            if (current[gi].players.length >= 5) continue;
+            const trial = current.map(g => ({ ...g, players: [...g.players] }));
+            trial[gi].players.push(name);
+            const score = countTotalBuffs(trial, roster, buffOverrides);
+            if (score > bestScore) {
+              current = trial;
+              bestScore = score;
+              improved = true;
+              break;
+            }
+          }
+          if (improved) break;
+        }
+      }
+    }
+
+    onChange(current);
+  };
+
   // --- Drag start ---
   const onDragStart = (groupIndex: number | 'pool', playerName: string) => (e: React.DragEvent) => {
     const source: DragSource = { groupIndex, playerName };
@@ -441,6 +541,13 @@ const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilde
             {shareStatus === 'copied' ? 'Copied!' : 'Share'}
           </button>
           <button
+            onClick={handleOptimize}
+            className="text-sm text-green-400 hover:text-green-300 px-3 py-1 rounded border border-green-700 hover:border-green-500"
+            title="Swap players between groups to maximize buff coverage"
+          >
+            Optimize
+          </button>
+          <button
             onClick={handleSave}
             className="text-sm text-gray-400 hover:text-white px-3 py-1 rounded border border-gray-600 hover:border-gray-400"
           >
@@ -572,17 +679,26 @@ const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilde
           const isOver = dropGroupTarget === gi && !dropPlayerTarget;
           const overLimit = group.players.length > 5;
           const incomplete = group.players.length < 5;
+          const buffGain = dragBuffGains?.get(gi) ?? 0;
+          const showBuffHint = draggedPlayer && buffGain > 0;
 
           return (
             <div
               key={gi}
-              className={`bg-gray-900 rounded-lg p-3 transition-colors ${
+              className={`bg-gray-900 rounded-lg p-3 transition-colors relative ${
                 isOver ? 'ring-2 ring-blue-500' : ''
-              } ${incomplete ? 'ring-1 ring-amber-500/50' : ''}`}
+              } ${showBuffHint ? 'ring-1 ring-green-500/50 bg-green-900/10' : ''
+              } ${!showBuffHint && incomplete ? 'ring-1 ring-amber-500/50' : ''}`}
               onDragOver={onGroupDragOver(gi)}
               onDragLeave={onGroupDragLeave}
               onDrop={onGroupDrop(gi)}
             >
+              {/* Buff gain badge */}
+              {showBuffHint && (
+                <span className="absolute -top-2 -right-2 bg-green-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  +{buffGain}
+                </span>
+              )}
               {/* Group header */}
               <div className="flex items-center justify-between mb-2">
                 <input
