@@ -51,13 +51,20 @@ const ROLE_NAME_MAP: Record<string, RaidRole> = {
 
 // Raid-Helper sometimes uses role names (e.g. "Tank") as className.
 // Infer the actual WoW class from specName when className isn't a real class.
+// Raid-Helper appends numbers to disambiguate shared spec names:
+//   Protection = Warrior, Protection1 = Paladin
+//   Holy = Priest, Holy1 = Paladin
+//   Restoration = Druid, Restoration1 = Shaman
 const SPEC_TO_CLASS: Record<string, WowClass> = {
-    protection: 'WARRIOR',  // ambiguous (Warrior/Paladin), default Warrior
+    protection: 'WARRIOR',
+    protection1: 'PALADIN',
     guardian: 'DRUID',
     feral: 'DRUID',
     balance: 'DRUID',
-    restoration: 'SHAMAN',  // ambiguous (Shaman/Druid), but Druid guardian/feral/balance covered above
-    holy: 'PALADIN',        // ambiguous (Paladin/Priest), default Paladin
+    restoration: 'DRUID',
+    restoration1: 'SHAMAN',
+    holy: 'PRIEST',
+    holy1: 'PALADIN',
     discipline: 'PRIEST',
     shadow: 'PRIEST',
     retribution: 'PALADIN',
@@ -83,11 +90,13 @@ function mapClassName(className: string, specName?: string): WowClass | null {
     const mapped = CLASS_NAME_MAP[className.toLowerCase()];
     if (mapped) return mapped;
 
-    // Fallback: infer from spec name (strip trailing digits first)
+    // Fallback: infer from spec name
+    // Try exact match first (e.g. "Protection1" → Paladin) then stripped
     if (specName) {
-        const cleanSpec = specName.replace(/\d+$/, '').toLowerCase();
-        const fromSpec = SPEC_TO_CLASS[cleanSpec];
-        if (fromSpec) return fromSpec;
+        const exact = specName.toLowerCase();
+        if (SPEC_TO_CLASS[exact]) return SPEC_TO_CLASS[exact];
+        const stripped = exact.replace(/\d+$/, '');
+        if (SPEC_TO_CLASS[stripped]) return SPEC_TO_CLASS[stripped];
     }
 
     return null;
