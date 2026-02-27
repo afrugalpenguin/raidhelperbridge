@@ -120,7 +120,7 @@ export default function StepGenerateImport({ event, roster, ccAssignments, group
               <li>In WoW, type <code className="bg-gray-700 px-1 rounded">/rhb import</code></li>
               <li>Paste into the dialog and click Accept</li>
               <li>Use <code className="bg-gray-700 px-1 rounded">/rhb invite</code> to send raid invites</li>
-              <li>Use <code className="bg-gray-700 px-1 rounded">/rhb sort</code> to optimize groups</li>
+              <li>Use <code className="bg-gray-700 px-1 rounded">/rhb sort</code> to optimise groups</li>
             </ol>
           </div>
         </>

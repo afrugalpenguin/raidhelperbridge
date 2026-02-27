@@ -48,6 +48,22 @@ function buffGainForGroup(playerName: string, group: GroupAssignment, roster: Ro
   return withPlayer - current;
 }
 
+/** Pick 2 distinct random elements from an array. */
+function pickTwo<T>(arr: T[]): [T, T] {
+  const i = Math.floor(Math.random() * arr.length);
+  let j = Math.floor(Math.random() * (arr.length - 1));
+  if (j >= i) j++;
+  return [arr[i], arr[j]];
+}
+
+/** Pick 3 distinct random elements from an array. */
+function pickThree<T>(arr: T[]): [T, T, T] {
+  const indices = new Set<number>();
+  while (indices.size < 3) indices.add(Math.floor(Math.random() * arr.length));
+  const [a, b, c] = Array.from(indices);
+  return [arr[a], arr[b], arr[c]];
+}
+
 function encodeDrag(source: DragSource): string {
   return JSON.stringify(source);
 }
@@ -282,68 +298,110 @@ const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilde
   // Greedy optimizer: try swaps between groups to maximize total buff coverage
   const handleOptimize = () => {
     pushSnapshot();
-    let current = groups.map(g => ({ ...g, players: [...g.players] }));
+    const clone = (gs: GroupAssignment[]) => gs.map(g => ({ ...g, players: [...g.players] }));
+
+    // Phase 1: Greedy — fill unassigned players into groups with open slots
+    let current = clone(groups);
+    const assignedNames = new Set(current.flatMap(g => g.players));
+    const unassignedPlayers = roster
+      .filter(r => r.signupStatus === 'confirmed')
+      .map(getPlayerName)
+      .filter(name => !assignedNames.has(name));
+
+    for (const name of unassignedPlayers) {
+      let bestGi = -1;
+      let bestGain = 0;
+      for (let gi = 0; gi < current.length; gi++) {
+        if (current[gi].players.length >= 5) continue;
+        const gain = buffGainForGroup(name, current[gi], roster, buffOverrides);
+        if (gain > bestGain || (gain === bestGain && bestGi === -1)) {
+          bestGain = gain;
+          bestGi = gi;
+        }
+      }
+      if (bestGi >= 0) {
+        current[bestGi] = { ...current[bestGi], players: [...current[bestGi].players, name] };
+      }
+    }
+
+    // Phase 2: Greedy pass — accept any improving swap exhaustively
     let bestScore = countTotalBuffs(current, roster, buffOverrides);
-    let improved = true;
-
-    // Cap iterations to avoid hanging on large rosters
-    let iterations = 0;
-    const MAX_ITERATIONS = 200;
-
-    while (improved && iterations < MAX_ITERATIONS) {
-      improved = false;
-      iterations++;
-
-      // Try every pair of players in different groups
-      for (let gi = 0; gi < current.length && !improved; gi++) {
-        for (let gj = gi + 1; gj < current.length && !improved; gj++) {
-          for (let pi = 0; pi < current[gi].players.length && !improved; pi++) {
+    let greedyImproved = true;
+    let greedyIter = 0;
+    while (greedyImproved && greedyIter < 100) {
+      greedyImproved = false;
+      greedyIter++;
+      for (let gi = 0; gi < current.length && !greedyImproved; gi++) {
+        for (let gj = gi + 1; gj < current.length && !greedyImproved; gj++) {
+          for (let pi = 0; pi < current[gi].players.length && !greedyImproved; pi++) {
             for (let pj = 0; pj < current[gj].players.length; pj++) {
-              // Try swapping player pi from group gi with player pj from group gj
-              const trial = current.map(g => ({ ...g, players: [...g.players] }));
+              const trial = clone(current);
               const tmp = trial[gi].players[pi];
               trial[gi].players[pi] = trial[gj].players[pj];
               trial[gj].players[pj] = tmp;
-
               const score = countTotalBuffs(trial, roster, buffOverrides);
               if (score > bestScore) {
                 current = trial;
                 bestScore = score;
-                improved = true;
+                greedyImproved = true;
                 break;
               }
             }
           }
         }
       }
+    }
 
-      // Also try moving unassigned players into groups with open slots
-      if (!improved) {
-        const assignedNames = new Set(current.flatMap(g => g.players));
-        const unassignedPlayers = roster
-          .filter(r => r.signupStatus === 'confirmed')
-          .map(getPlayerName)
-          .filter(name => !assignedNames.has(name));
+    // Phase 3: Simulated annealing — escape local optima with random moves
+    let best = clone(current);
+    let currentScore = bestScore;
+    let temperature = 4.0;
+    const COOLING_RATE = 0.995;
+    const SA_ITERATIONS = 2000;
 
-        for (const name of unassignedPlayers) {
-          for (let gi = 0; gi < current.length; gi++) {
-            if (current[gi].players.length >= 5) continue;
-            const trial = current.map(g => ({ ...g, players: [...g.players] }));
-            trial[gi].players.push(name);
-            const score = countTotalBuffs(trial, roster, buffOverrides);
-            if (score > bestScore) {
-              current = trial;
-              bestScore = score;
-              improved = true;
-              break;
-            }
-          }
-          if (improved) break;
+    for (let i = 0; i < SA_ITERATIONS; i++) {
+      temperature *= COOLING_RATE;
+      const trial = clone(current);
+
+      // Random move: 70% swap, 30% 3-player rotation
+      const groupIndices = trial.map((_, idx) => idx).filter(idx => trial[idx].players.length > 0);
+      if (groupIndices.length < 2) break;
+
+      if (Math.random() < 0.7 || groupIndices.length < 3) {
+        // 2-player swap
+        const [a, b] = pickTwo(groupIndices);
+        const pi = Math.floor(Math.random() * trial[a].players.length);
+        const pj = Math.floor(Math.random() * trial[b].players.length);
+        const tmp = trial[a].players[pi];
+        trial[a].players[pi] = trial[b].players[pj];
+        trial[b].players[pj] = tmp;
+      } else {
+        // 3-player rotation: A→B, B→C, C→A
+        const [a, b, c] = pickThree(groupIndices);
+        const pi = Math.floor(Math.random() * trial[a].players.length);
+        const pj = Math.floor(Math.random() * trial[b].players.length);
+        const pk = Math.floor(Math.random() * trial[c].players.length);
+        const tmpA = trial[a].players[pi];
+        trial[a].players[pi] = trial[c].players[pk];
+        trial[c].players[pk] = trial[b].players[pj];
+        trial[b].players[pj] = tmpA;
+      }
+
+      const trialScore = countTotalBuffs(trial, roster, buffOverrides);
+      const delta = trialScore - currentScore;
+
+      // Accept better solutions always; accept worse with probability e^(delta/T)
+      if (delta > 0 || Math.random() < Math.exp(delta / temperature)) {
+        current = trial;
+        currentScore = trialScore;
+        if (currentScore > bestScore) {
+          best = clone(current);
+          bestScore = currentScore;
         }
       }
     }
 
-    onChange(current);
+    onChange(best);
   };
 
   // --- Drag start ---
@@ -543,9 +601,9 @@ const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilde
           <button
             onClick={handleOptimize}
             className="text-sm text-green-400 hover:text-green-300 px-3 py-1 rounded border border-green-700 hover:border-green-500"
-            title="Swap players between groups to maximize buff coverage"
+            title="Swap players between groups to maximise buff coverage"
           >
-            Optimize
+            Optimise
           </button>
           <button
             onClick={handleSave}
