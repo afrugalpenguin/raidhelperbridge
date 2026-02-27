@@ -542,11 +542,11 @@ const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilde
               <span className={`transition-transform ${warningsExpanded ? 'rotate-90' : ''}`}>&#9656;</span>
             </button>
             {warningsExpanded && (
-              <div className="mt-2 space-y-1 pl-5">
+              <div className="mt-2 space-y-3 pl-5">
                 {groupWarnings.map(w => (
-                  <div key={w.groupIndex} className="flex items-center gap-2 text-sm">
-                    <span className="text-gray-400 w-20 flex-shrink-0">{w.label}:</span>
-                    <div className="flex flex-wrap gap-1.5">
+                  <div key={w.groupIndex} className="text-sm">
+                    <span className="text-gray-400 font-medium">{w.label}</span>
+                    <div className="flex flex-wrap gap-2 mt-1">
                       {w.missing.map(b => (
                         <div key={b.buff.id} className="flex items-center gap-1" title={b.buff.name}>
                           <img
