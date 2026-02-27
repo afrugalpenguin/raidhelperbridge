@@ -4,7 +4,8 @@ local addonName, addon = ...
 -- Screen-edge Tab — HidingBar-style quick-action panel
 --------------------------------------------------------------------------------
 
-local TAB_WIDTH = 40
+local TAB_WIDTH_COLLAPSED = 14
+local TAB_WIDTH_EXPANDED = 40
 local TAB_HEIGHT = 20
 local BTN_WIDTH = 140
 local BTN_HEIGHT = 22
@@ -25,6 +26,7 @@ local BUTTONS = {
 
 local tab, panel
 local hideTimer
+local CollapseTab  -- forward reference
 
 --------------------------------------------------------------------------------
 -- Hide / show helpers
@@ -42,6 +44,7 @@ local function ScheduleHide()
     hideTimer = C_Timer.NewTimer(HIDE_DELAY, function()
         hideTimer = nil
         if panel then panel:Hide() end
+        if CollapseTab then CollapseTab() end
     end)
 end
 
@@ -76,7 +79,7 @@ local function CreateTab()
 
     -- Collapsed tab ----------------------------------------------------------
     tab = CreateFrame("Frame", "RHBTab", UIParent, "BackdropTemplate")
-    tab:SetSize(TAB_WIDTH, TAB_HEIGHT)
+    tab:SetSize(TAB_WIDTH_COLLAPSED, TAB_HEIGHT)
     tab:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 0, 0)
     tab:SetFrameStrata("HIGH")
     tab:SetClampedToScreen(true)
@@ -91,9 +94,28 @@ local function CreateTab()
     })
     tab:SetBackdropColor(0, 0, 0, 0.85)
 
+    -- Chevron (visible when collapsed)
+    local chevron = tab:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    chevron:SetPoint("CENTER")
+    chevron:SetText("|cFFFFD100\226\150\188|r")  -- ▼ small down arrow
+
+    -- Label (visible when expanded)
     local label = tab:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     label:SetPoint("CENTER")
     label:SetText("|cFFFFD100RHB|r")
+    label:Hide()
+
+    local function ExpandTab()
+        tab:SetWidth(TAB_WIDTH_EXPANDED)
+        chevron:Hide()
+        label:Show()
+    end
+
+    CollapseTab = function()
+        tab:SetWidth(TAB_WIDTH_COLLAPSED)
+        label:Hide()
+        chevron:Show()
+    end
 
     -- Drag: constrain to top edge
     tab:SetScript("OnDragStart", function(self) self:StartMoving() end)
@@ -106,8 +128,8 @@ local function CreateTab()
         SaveTabPosition()
     end)
 
-    -- Mouseover → show panel
-    tab:SetScript("OnEnter", function() ShowPanel() end)
+    -- Mouseover → expand tab + show panel
+    tab:SetScript("OnEnter", function() ExpandTab(); ShowPanel() end)
     tab:SetScript("OnLeave", function() ScheduleHide() end)
 
     -- Expanded panel ---------------------------------------------------------
