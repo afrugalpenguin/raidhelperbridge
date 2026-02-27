@@ -3,8 +3,11 @@
 import { useState } from 'react';
 import type { EventData, RosterEntry } from '@/lib/rosterTypes';
 import { loadMappings, saveMapping } from '@/lib/characterMappings';
+import { autoResolveCC } from '@/lib/ccResolver';
+import type { CCAssignment } from '@/lib/ccResolver';
 import StepFetchEvent from '@/components/StepFetchEvent';
 import StepMapNames from '@/components/StepMapNames';
+import StepCCRules from '@/components/StepCCRules';
 import StepGenerateImport from '@/components/StepGenerateImport';
 
 function extractEventId(input: string): string | null {
@@ -22,6 +25,7 @@ export default function Home() {
   const [error, setError] = useState('');
   const [event, setEvent] = useState<EventData | null>(null);
   const [roster, setRoster] = useState<RosterEntry[]>([]);
+  const [ccAssignments, setCCAssignments] = useState<CCAssignment[]>([]);
 
   const fetchEvent = async () => {
     const eventId = extractEventId(urlInput);
@@ -44,16 +48,17 @@ export default function Home() {
       const data: EventData = await res.json();
       setEvent(data);
       const stored = loadMappings();
-      setRoster(
-        data.signups.map((s) => ({
-          discordId: s.discordId,
-          discordName: s.discordName,
-          class: s.class,
-          role: s.role,
-          spec: s.spec,
-          wowCharacter: stored[s.discordId] || '',
-        }))
-      );
+      const rosterEntries = data.signups.map((s) => ({
+        discordId: s.discordId,
+        discordName: s.discordName,
+        class: s.class,
+        role: s.role,
+        spec: s.spec,
+        wowCharacter: stored[s.discordId] || '',
+      }));
+      setRoster(rosterEntries);
+      // Auto-resolve initial CC assignments
+      setCCAssignments(autoResolveCC(rosterEntries));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
@@ -88,7 +93,8 @@ export default function Home() {
         {roster.length > 0 && (
           <>
             <StepMapNames roster={roster} onUpdateName={updateWowName} />
-            {/* Steps 3 and 4 (CC rules, groups) will go here later */}
+            <StepCCRules roster={roster} assignments={ccAssignments} onChange={setCCAssignments} />
+            {/* Step 4 (groups) will go here later */}
             <StepGenerateImport event={event!} roster={roster} />
           </>
         )}

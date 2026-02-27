@@ -61,7 +61,7 @@ export default function StepGenerateImport({ event, roster }: Props) {
 
   return (
     <section className="bg-gray-800 rounded-lg p-6 mb-6">
-      <h2 className="text-lg font-semibold mb-3">3. Generate Import String</h2>
+      <h2 className="text-lg font-semibold mb-3">4. Generate Import String</h2>
       <button
         onClick={generateImport}
         disabled={generating}
