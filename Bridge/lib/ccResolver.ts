@@ -93,7 +93,7 @@ export function autoResolveCC(roster: RosterEntry[]): CCAssignment[] {
   // Default TBC CC priority: Square(6)=poly, Moon(5)=poly2, Triangle(4)=shackle/banish, Diamond(3)=trap
   const defaultRules: { marker: RaidMarker; ccTypes: CCType[] }[] = [
     { marker: 6, ccTypes: ['polymorph', 'freezingtrap'] },
-    { marker: 5, ccTypes: ['polymorph', 'sap'] },
+    { marker: 5, ccTypes: ['sap', 'polymorph'] },
     { marker: 4, ccTypes: ['shackle', 'banish'] },
     { marker: 3, ccTypes: ['freezingtrap', 'hibernate'] },
   ];
