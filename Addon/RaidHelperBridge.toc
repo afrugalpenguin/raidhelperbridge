@@ -29,3 +29,4 @@ InviteManager.lua
 # UI
 UI\MainFrame.lua
 UI\CCFrame.lua
+UI\TabFrame.lua

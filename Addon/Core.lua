@@ -22,6 +22,7 @@ local defaults = {
         autoWhisper = true,
         whisperCooldown = 30,
         debugMode = false,
+        tabFramePos = nil,
     },
 }
 
