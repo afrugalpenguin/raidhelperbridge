@@ -1,5 +1,15 @@
 # Changelog
 
+**v1.0.1**
+
+- Fixed tanks not being detected — Raid-Helper returns `className=Tank` instead of the actual WoW class; now infers class from spec name
+- Added row numbers to the roster table
+- Accept `/raidplan/` URLs in the event input (not just `/event/` and `/events/`)
+- Updated placeholder text to show a raidplan URL example
+- Added `[fallback]` labels to CC assignment summary
+- Removed dead code from importGenerator (old CC resolver and default templates)
+- Updated website subtitle text
+
 **v1.0.0**
 
 - Bridge web app with 5-step workflow: fetch event, map names, CC rules, group builder, generate import
