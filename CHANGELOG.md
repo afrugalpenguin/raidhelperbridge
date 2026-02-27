@@ -1,5 +1,15 @@
 # Changelog
 
+**v1.0.9**
+
+- Party buff icons under each group card — 14 buffs (Bloodlust, Windfury, Wrath of Air, Mana Spring, Trueshot, Battle Shout, Devotion Aura, Moonkin, Leader of the Pack, Unleashed Rage, Totem of Wrath, Vampiric Touch, Ferocious Inspiration, Sanctity Aura)
+- Buff icons are clickable to manually toggle — overrides follow the player when dragged between groups
+- Popover picker when multiple candidates exist (e.g., two paladins — pick which one has the buff)
+- Sanctity Aura is manual-only since talent builds can't be inferred from spec data
+- Screen-edge tab for quick-action buttons — small chevron at top-left expands on mouseover to show Status, Import, CC View, My CC, Groups, Invite, Sort
+- Tab is draggable horizontally along top edge with position persistence
+- Fixed CC frames crashing on TBC Anniversary client (SetMinResize → SetResizeBounds)
+
 **v1.0.8**
 
 - Fixed tentative/bench/late/absent players being placed into groups from raidplan data — they now correctly appear only in their status pools
