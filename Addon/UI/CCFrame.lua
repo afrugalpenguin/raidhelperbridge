@@ -67,8 +67,12 @@ local function CreateCCFrame(name, title, width, height, posKey)
 
     -- Resize grip
     frame:SetResizable(true)
-    frame:SetMinResize(150, 60)
-    frame:SetMaxResize(500, 600)
+    if frame.SetResizeBounds then
+        frame:SetResizeBounds(150, 60, 500, 600)
+    else
+        frame:SetMinResize(150, 60)
+        frame:SetMaxResize(500, 600)
+    end
     local grip = CreateFrame("Button", nil, frame)
     grip:SetSize(16, 16)
     grip:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -2, 2)
