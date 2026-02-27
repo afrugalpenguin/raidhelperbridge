@@ -295,13 +295,14 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
         {groups.map((group, gi) => {
           const isOver = dropGroupTarget === gi && !dropPlayerTarget;
           const overLimit = group.players.length > 5;
+          const incomplete = group.players.length < 5;
 
           return (
             <div
               key={gi}
               className={`bg-gray-900 rounded-lg p-3 transition-colors ${
                 isOver ? 'ring-2 ring-blue-500' : ''
-              }`}
+              } ${incomplete ? 'ring-1 ring-amber-500/50' : ''}`}
               onDragOver={onGroupDragOver(gi)}
               onDragLeave={onGroupDragLeave}
               onDrop={onGroupDrop(gi)}
@@ -314,7 +315,10 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
                   onChange={(e) => handleLabelChange(gi, e.target.value)}
                   className="bg-transparent border-b border-transparent hover:border-gray-600 focus:border-blue-500 focus:outline-none text-sm font-medium w-32 px-0"
                 />
-                <span className={`text-xs ${overLimit ? 'text-red-400 font-bold' : 'text-gray-500'}`}>
+                <span className={`text-xs flex items-center gap-1 ${
+                  overLimit ? 'text-red-400 font-bold' : incomplete ? 'text-amber-400' : 'text-gray-500'
+                }`}>
+                  {incomplete && <span title="Group incomplete">&#9888;</span>}
                   {group.players.length}/5
                 </span>
               </div>
