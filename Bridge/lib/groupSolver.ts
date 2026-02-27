@@ -6,6 +6,62 @@ export interface GroupAssignment {
   players: string[]; // player names, max 5
 }
 
+export interface StoredGroupTemplate {
+  name: string;
+  groups: { label: string; players: string[] }[];
+}
+
+const TEMPLATES_KEY = 'rhb-group-templates';
+
+export function loadGroupTemplates(): StoredGroupTemplate[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(TEMPLATES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveGroupTemplate(name: string, groups: GroupAssignment[]): void {
+  if (typeof window === 'undefined') return;
+  const templates = loadGroupTemplates();
+  // Overwrite if same name exists
+  const filtered = templates.filter(t => t.name !== name);
+  filtered.push({
+    name,
+    groups: groups.map(g => ({ label: g.label, players: [...g.players] })),
+  });
+  try {
+    localStorage.setItem(TEMPLATES_KEY, JSON.stringify(filtered));
+  } catch {
+    // localStorage full or unavailable
+  }
+}
+
+export function deleteGroupTemplate(name: string): void {
+  if (typeof window === 'undefined') return;
+  const templates = loadGroupTemplates().filter(t => t.name !== name);
+  try {
+    localStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
+  } catch {
+    // localStorage full or unavailable
+  }
+}
+
+// Apply a saved template against the current roster.
+// Known players go into their saved groups; unknown names are dropped.
+// Roster players not in the template end up unassigned.
+export function applyGroupTemplate(template: StoredGroupTemplate, roster: RosterEntry[]): GroupAssignment[] {
+  const rosterNames = new Set(roster.map(r => r.wowCharacter.trim() || r.discordName));
+
+  return template.groups.map((g, i) => ({
+    groupNumber: i + 1,
+    label: g.label,
+    players: g.players.filter(name => rosterNames.has(name)),
+  }));
+}
+
 function getPlayerName(entry: RosterEntry): string {
   return entry.wowCharacter.trim() || entry.discordName;
 }

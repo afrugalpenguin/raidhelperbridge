@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { RosterEntry } from '@/lib/rosterTypes';
-import type { GroupAssignment } from '@/lib/groupSolver';
-import { autoAssignGroups } from '@/lib/groupSolver';
+import type { GroupAssignment, StoredGroupTemplate } from '@/lib/groupSolver';
+import { autoAssignGroups, loadGroupTemplates, saveGroupTemplate, deleteGroupTemplate, applyGroupTemplate } from '@/lib/groupSolver';
 import { CLASS_COLORS } from '@/lib/constants';
 
 interface Props {
@@ -38,6 +38,11 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
   const [dropPlayerTarget, setDropPlayerTarget] = useState<string | null>(null);
   const [draggedPlayer, setDraggedPlayer] = useState<string | null>(null);
   const dragSourceRef = useRef<DragSource | null>(null);
+  const [savedTemplates, setSavedTemplates] = useState<StoredGroupTemplate[]>([]);
+
+  useEffect(() => {
+    setSavedTemplates(loadGroupTemplates());
+  }, []);
 
   // Compute unassigned players
   const assignedNames = new Set(groups.flatMap(g => g.players));
@@ -50,6 +55,24 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
     setDropGroupTarget(null);
     setDropPlayerTarget(null);
     onChange(autoAssignGroups(roster));
+  };
+
+  const handleSave = () => {
+    const name = prompt('Template name:');
+    if (!name?.trim()) return;
+    saveGroupTemplate(name.trim(), groups);
+    setSavedTemplates(loadGroupTemplates());
+  };
+
+  const handleLoad = (templateName: string) => {
+    const template = savedTemplates.find(t => t.name === templateName);
+    if (!template) return;
+    onChange(applyGroupTemplate(template, roster));
+  };
+
+  const handleDelete = (templateName: string) => {
+    deleteGroupTemplate(templateName);
+    setSavedTemplates(loadGroupTemplates());
   };
 
   const handleLabelChange = (groupIndex: number, label: string) => {
@@ -193,12 +216,44 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
     <section className="bg-gray-800 rounded-lg p-6 mb-6">
       <div className="flex items-center justify-between mb-1">
         <h2 className="text-lg font-semibold">4. Raid Groups</h2>
-        <button
-          onClick={handleReset}
-          className="text-sm text-gray-400 hover:text-white px-3 py-1 rounded border border-gray-600 hover:border-gray-400"
-        >
-          Reset
-        </button>
+        <div className="flex items-center gap-2">
+          {savedTemplates.length > 0 && (
+            <div className="flex items-center gap-1">
+              <select
+                defaultValue=""
+                onChange={(e) => { handleLoad(e.target.value); e.target.value = ''; }}
+                className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500"
+              >
+                <option value="" disabled>Load template...</option>
+                {savedTemplates.map(t => (
+                  <option key={t.name} value={t.name}>{t.name}</option>
+                ))}
+              </select>
+              <button
+                onClick={() => {
+                  const name = prompt('Delete which template?\n\n' + savedTemplates.map(t => t.name).join('\n'));
+                  if (name) handleDelete(name);
+                }}
+                className="text-gray-500 hover:text-red-400 text-sm px-1"
+                title="Delete a template"
+              >
+                x
+              </button>
+            </div>
+          )}
+          <button
+            onClick={handleSave}
+            className="text-sm text-gray-400 hover:text-white px-3 py-1 rounded border border-gray-600 hover:border-gray-400"
+          >
+            Save
+          </button>
+          <button
+            onClick={handleReset}
+            className="text-sm text-gray-400 hover:text-white px-3 py-1 rounded border border-gray-600 hover:border-gray-400"
+          >
+            Reset
+          </button>
+        </div>
       </div>
       <p className="text-gray-400 text-sm mb-4">
         Drag to a group to move, or onto a player to swap.
