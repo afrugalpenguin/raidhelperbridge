@@ -9,7 +9,7 @@ export interface GroupBuff {
   match: (cls: WowClass, spec?: string) => boolean;
 }
 
-const BUFFS: GroupBuff[] = [
+export const BUFFS: GroupBuff[] = [
   // --- Any-class auras ---
   {
     id: 'bloodlust',

@@ -3,7 +3,7 @@ import type { RosterEntry } from '@/lib/rosterTypes';
 import type { GroupAssignment, StoredGroupTemplate } from '@/lib/groupSolver';
 import { autoAssignGroups, loadGroupTemplates, saveGroupTemplate, deleteGroupTemplate, applyGroupTemplate } from '@/lib/groupSolver';
 import { CLASS_COLORS, ROLE_LABELS } from '@/lib/constants';
-import { resolveGroupBuffs } from '@/lib/groupBuffs';
+import { resolveGroupBuffs, BUFFS } from '@/lib/groupBuffs';
 import type { RaidRole } from '@/lib/types';
 
 interface Props {
@@ -362,6 +362,32 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
         <span className="text-gray-300">
           <span className="text-gray-500">Total:</span> {confirmedRoster.length}
         </span>
+      </div>
+
+      {/* Buff coverage summary */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {BUFFS.map(buff => {
+          const covered = groups.filter(g => {
+            const auto = resolveGroupBuffs(g.players, roster).find(b => b.buff.id === buff.id);
+            const autoActive = auto?.active ?? false;
+            const hasOverride = g.players.some(p => buffOverrides.has(`${p}_${buff.id}`));
+            return hasOverride ? !autoActive : autoActive;
+          }).length;
+          return (
+            <div
+              key={buff.id}
+              className={`flex items-center gap-1 ${covered > 0 ? '' : 'opacity-30 grayscale'}`}
+              title={`${buff.name}: ${covered}/${groups.length} groups`}
+            >
+              <img
+                src={`https://wow.zamimg.com/images/wow/icons/small/${buff.icon}.jpg`}
+                alt={buff.name}
+                className="w-4 h-4 rounded-sm"
+              />
+              <span className={`text-xs ${covered > 0 ? 'text-gray-300' : 'text-gray-600'}`}>{covered}</span>
+            </div>
+          );
+        })}
       </div>
 
       {/* Group cards grid */}
