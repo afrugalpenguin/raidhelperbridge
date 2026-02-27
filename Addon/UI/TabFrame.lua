@@ -97,7 +97,7 @@ local function CreateTab()
     -- Chevron (visible when collapsed)
     local chevron = tab:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     chevron:SetPoint("CENTER")
-    chevron:SetText("|cFFFFD100v|r")
+    chevron:SetText("|cFFFFD100>|r")
 
     -- Label (visible when expanded)
     local label = tab:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
