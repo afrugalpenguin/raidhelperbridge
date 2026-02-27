@@ -111,6 +111,7 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
   const onGroupDrop = (targetGroupIndex: number | 'pool') => (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    setDraggedPlayer(null);
     setDropGroupTarget(null);
     setDropPlayerTarget(null);
 
@@ -150,6 +151,7 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
   const onPlayerDrop = (targetGroupIndex: number | 'pool', targetPlayer: string) => (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    setDraggedPlayer(null);
     setDropGroupTarget(null);
     setDropPlayerTarget(null);
 
