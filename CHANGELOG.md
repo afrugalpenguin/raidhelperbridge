@@ -1,5 +1,9 @@
 # Changelog
 
+**v1.0.4**
+
+- Fixed group assignments — now fetches explicit group data from the Raid-Helper raidplan API instead of inferring from signup position
+
 **v1.0.3**
 
 - Detect Raid-Helper lineup positions and auto-assign groups based on raidplan layout
