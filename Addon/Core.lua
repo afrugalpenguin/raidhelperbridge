@@ -23,6 +23,7 @@ local defaults = {
         whisperCooldown = 30,
         debugMode = false,
         tabFramePos = nil,
+        groupFramePos = nil,
     },
 }
 

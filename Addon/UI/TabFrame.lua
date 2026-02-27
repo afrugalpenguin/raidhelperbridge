@@ -19,7 +19,7 @@ local BUTTONS = {
     { label = "Import",   method = "ShowImportDialog",      icon = "Interface\\Icons\\INV_Letter_15" },
     { label = "CC View",  method = "ToggleLeaderCCFrame",   icon = "Interface\\Icons\\Spell_Nature_Polymorph" },
     { label = "My CC",    method = "TogglePlayerCCFrame",   icon = "Interface\\Icons\\Ability_Creature_Cursed_04" },
-    { label = "Groups",   method = "PreviewGroupLayout",    icon = "Interface\\Icons\\Achievement_GuildPerk_EverybodysFriend" },
+    { label = "Groups",   method = "ToggleGroupFrame",       icon = "Interface\\Icons\\Achievement_GuildPerk_EverybodysFriend" },
     { label = "Invite",   method = "SendRaidInvites",       icon = "Interface\\Icons\\INV_Letter_04" },
     { label = "Sort",     method = "ApplyGroupLayout",      icon = "Interface\\Icons\\INV_Misc_GroupNeedMore" },
 }

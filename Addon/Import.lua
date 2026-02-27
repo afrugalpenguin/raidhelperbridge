@@ -120,9 +120,12 @@ function addon:ImportEvent(importStr)
         addon:Print("Group templates loaded")
     end
 
-    -- Refresh CC display frames if visible
+    -- Refresh display frames if visible
     if addon.RefreshCCFrames then
         addon:RefreshCCFrames()
+    end
+    if addon.RefreshGroupFrame then
+        addon:RefreshGroupFrame()
     end
 
     return true
