@@ -102,7 +102,7 @@ export default function Home() {
             <StepMapNames roster={roster} onUpdateName={updateWowName} />
             <StepCCRules roster={roster} assignments={ccAssignments} onChange={setCCAssignments} />
             <StepGroupBuilder roster={roster} groups={groups} onChange={setGroups} />
-            <StepGenerateImport event={event!} roster={roster} />
+            <StepGenerateImport event={event!} roster={roster} ccAssignments={ccAssignments} groupAssignments={groups} />
           </>
         )}
       </div>

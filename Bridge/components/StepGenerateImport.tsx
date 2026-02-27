@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import type { EventData, RosterEntry } from '@/lib/rosterTypes';
+import type { CCAssignment } from '@/lib/ccResolver';
+import type { GroupAssignment } from '@/lib/groupSolver';
 
 interface Props {
   event: EventData;
   roster: RosterEntry[];
+  ccAssignments: CCAssignment[];
+  groupAssignments: GroupAssignment[];
 }
 
-export default function StepGenerateImport({ event, roster }: Props) {
+export default function StepGenerateImport({ event, roster, ccAssignments, groupAssignments }: Props) {
   const [importString, setImportString] = useState('');
   const [summary, setSummary] = useState('');
   const [copied, setCopied] = useState(false);
@@ -16,7 +20,7 @@ export default function StepGenerateImport({ event, roster }: Props) {
     setGenerating(true);
     try {
       // Dynamic import to keep pako out of initial bundle
-      const { buildImportPayload, generateImportString, generateImportSummary, DEFAULT_CC_TEMPLATE, DEFAULT_GROUP_TEMPLATES } =
+      const { buildImportPayload, generateImportString, generateImportSummary } =
         await import('@/lib/importGenerator');
 
       const raidEvent = {
@@ -40,7 +44,23 @@ export default function StepGenerateImport({ event, roster }: Props) {
         createdBy: '',
       };
 
-      const payload = buildImportPayload(raidEvent, DEFAULT_CC_TEMPLATE, DEFAULT_GROUP_TEMPLATES);
+      // Convert CC assignments from UI format to payload format
+      const payloadCC = ccAssignments.map(a => ({
+        marker: a.marker,
+        assignments: a.entries.map(e => ({
+          ccType: e.ccType,
+          playerName: e.playerName,
+        })),
+      }));
+
+      // Convert group assignments
+      const payloadGroups = groupAssignments.map(g => ({
+        groupNumber: g.groupNumber,
+        label: g.label,
+        players: g.players,
+      }));
+
+      const payload = buildImportPayload(raidEvent, undefined, undefined, payloadCC, payloadGroups);
       const str = generateImportString(payload);
       const sum = generateImportSummary(payload);
       setImportString(str);

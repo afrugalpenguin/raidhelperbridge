@@ -94,7 +94,9 @@ export function resolveCCAssignments(
 export function buildImportPayload(
     event: RaidEvent,
     ccTemplate?: CCTemplate,
-    groupTemplates?: GroupTemplate[]
+    groupTemplates?: GroupTemplate[],
+    resolvedCC?: ImportPayload['ccAssignments'],
+    groupAssignments?: ImportPayload['groupAssignments'],
 ): ImportPayload {
     const payload: ImportPayload = {
         version: 1,
@@ -110,16 +112,31 @@ export function buildImportPayload(
                 spec: s.spec,
             })),
     };
-    
-    if (ccTemplate) {
+
+    if (resolvedCC) {
+        payload.ccAssignments = resolvedCC;
+    } else if (ccTemplate) {
         payload.ccTemplate = ccTemplate;
         payload.ccAssignments = resolveCCAssignments(event, ccTemplate);
     }
-    
-    if (groupTemplates) {
+
+    if (groupAssignments) {
+        payload.groupAssignments = groupAssignments;
+    } else if (groupTemplates) {
         payload.groupTemplates = groupTemplates;
     }
-    
+
+    // Build character mappings from signups
+    const characterMappings: Record<string, string> = {};
+    for (const s of event.signups) {
+        if (s.wowCharacter) {
+            characterMappings[s.discordId] = s.wowCharacter;
+        }
+    }
+    if (Object.keys(characterMappings).length > 0) {
+        payload.characterMappings = characterMappings;
+    }
+
     return payload;
 }
 
@@ -189,7 +206,16 @@ export function generateImportSummary(payload: ImportPayload): string {
             }
         }
     }
-    
+
+    if (payload.groupAssignments && payload.groupAssignments.length > 0) {
+        lines.push('');
+        lines.push('Group Assignments:');
+        for (const group of payload.groupAssignments) {
+            const players = group.players.length > 0 ? group.players.join(', ') : '(empty)';
+            lines.push(`  Group ${group.groupNumber} (${group.label}): ${players}`);
+        }
+    }
+
     return lines.join('\n');
 }
 

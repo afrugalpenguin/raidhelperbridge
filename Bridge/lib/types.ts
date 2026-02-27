@@ -98,6 +98,12 @@ export interface ImportPayload {
             playerName: string;
         }[];
     }[];
+    groupAssignments?: {
+        groupNumber: number;
+        label: string;
+        players: string[];
+    }[];
+    characterMappings?: Record<string, string>; // discordId -> wowName
 }
 
 // Raid-Helper API v2 response types

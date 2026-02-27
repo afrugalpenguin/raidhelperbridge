@@ -93,15 +93,30 @@ function addon:ImportEvent(importStr)
     
     -- Store in saved variables
     addon.charDb.currentEvent = data
-    
+
+    -- Store abstract templates and mappings for v2 in-game editing
+    if data.ccTemplate then
+        addon.db.ccTemplates[data.eventId or "latest"] = data.ccTemplate
+    end
+    if data.groupTemplates then
+        addon.db.groupTemplates[data.eventId or "latest"] = data.groupTemplates
+    end
+    if data.characterMappings then
+        for discordId, wowName in pairs(data.characterMappings) do
+            addon.db.characterMappings[discordId] = wowName
+        end
+    end
+
     addon:Print("Imported event: " .. data.eventName)
     addon:Print("Players: " .. #data.players)
-    
+
     if data.ccAssignments and #data.ccAssignments > 0 then
         addon:Print("CC assignments loaded")
     end
-    
-    if data.groupTemplates and #data.groupTemplates > 0 then
+
+    if data.groupAssignments and #data.groupAssignments > 0 then
+        addon:Print("Group assignments loaded (" .. #data.groupAssignments .. " groups)")
+    elseif data.groupTemplates and #data.groupTemplates > 0 then
         addon:Print("Group templates loaded")
     end
 

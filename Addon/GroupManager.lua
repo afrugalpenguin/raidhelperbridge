@@ -44,7 +44,19 @@ function GroupManager:CalculateGroups()
         addon:Print("No event loaded")
         return nil
     end
-    
+
+    -- Prefer concrete group assignments from import
+    if event.groupAssignments and #event.groupAssignments > 0 then
+        local groups = { {}, {}, {}, {}, {}, {}, {}, {} }
+        for _, ga in ipairs(event.groupAssignments) do
+            if ga.groupNumber >= 1 and ga.groupNumber <= 8 then
+                groups[ga.groupNumber] = ga.players or {}
+            end
+        end
+        return groups
+    end
+
+    -- Fall back to template-based calculation
     local groups = { {}, {}, {}, {}, {}, {}, {}, {} }
     local assigned = {}  -- Track assigned players
     
