@@ -5,6 +5,7 @@ export interface GroupBuff {
   id: string;
   name: string;
   icon: string;
+  providerClass: WowClass; // used to find candidate when manually toggling
   match: (cls: WowClass, spec?: string) => boolean;
 }
 
@@ -14,42 +15,49 @@ const BUFFS: GroupBuff[] = [
     id: 'bloodlust',
     name: 'Bloodlust / Heroism',
     icon: 'spell_nature_bloodlust',
+    providerClass: 'SHAMAN',
     match: (cls) => cls === 'SHAMAN',
   },
   {
     id: 'windfury',
     name: 'Windfury Totem',
     icon: 'spell_nature_windfury',
+    providerClass: 'SHAMAN',
     match: (cls) => cls === 'SHAMAN',
   },
   {
     id: 'wrathofair',
     name: 'Wrath of Air Totem',
     icon: 'spell_nature_slowingtotem',
+    providerClass: 'SHAMAN',
     match: (cls) => cls === 'SHAMAN',
   },
   {
     id: 'manaspring',
     name: 'Mana Spring Totem',
     icon: 'spell_nature_manaregentotem',
+    providerClass: 'SHAMAN',
     match: (cls) => cls === 'SHAMAN',
   },
   {
     id: 'trueshot',
     name: 'Trueshot Aura',
     icon: 'ability_trueshot',
+    providerClass: 'HUNTER',
     match: (cls) => cls === 'HUNTER',
   },
   {
     id: 'battleshout',
     name: 'Battle Shout',
     icon: 'ability_warrior_battleshout',
+    providerClass: 'WARRIOR',
     match: (cls) => cls === 'WARRIOR',
   },
   {
     id: 'devotion',
     name: 'Devotion Aura',
     icon: 'spell_holy_devotionaura',
+    providerClass: 'PALADIN',
     match: (cls) => cls === 'PALADIN',
   },
   // --- Spec-specific ---
@@ -57,42 +65,49 @@ const BUFFS: GroupBuff[] = [
     id: 'moonkin',
     name: 'Moonkin Aura',
     icon: 'spell_nature_starfall',
+    providerClass: 'DRUID',
     match: (cls, spec) => cls === 'DRUID' && !!spec && spec.toLowerCase().includes('balance'),
   },
   {
     id: 'lotp',
     name: 'Leader of the Pack',
     icon: 'ability_druid_demoralizingroar',
+    providerClass: 'DRUID',
     match: (cls, spec) => cls === 'DRUID' && !!spec && spec.toLowerCase().includes('feral'),
   },
   {
     id: 'unleashed',
     name: 'Unleashed Rage',
     icon: 'spell_nature_unleashedrage',
+    providerClass: 'SHAMAN',
     match: (cls, spec) => cls === 'SHAMAN' && !!spec && spec.toLowerCase().includes('enhancement'),
   },
   {
     id: 'totemwrath',
     name: 'Totem of Wrath',
     icon: 'spell_fire_totemofwrath',
+    providerClass: 'SHAMAN',
     match: (cls, spec) => cls === 'SHAMAN' && !!spec && spec.toLowerCase().includes('elemental'),
   },
   {
     id: 'vampirictouch',
     name: 'Vampiric Touch',
     icon: 'spell_holy_stoicism',
+    providerClass: 'PRIEST',
     match: (cls, spec) => cls === 'PRIEST' && !!spec && spec.toLowerCase().includes('shadow'),
   },
   {
     id: 'ferocious',
     name: 'Ferocious Inspiration',
     icon: 'ability_hunter_ferociousinspiration',
+    providerClass: 'HUNTER',
     match: (cls, spec) => cls === 'HUNTER' && !!spec && spec.toLowerCase().includes('beast'),
   },
   {
     id: 'sanctity',
     name: 'Sanctity Aura',
     icon: 'spell_holy_mindvision',
+    providerClass: 'PALADIN',
     match: () => false, // manual toggle only — can't detect from spec data
   },
 ];

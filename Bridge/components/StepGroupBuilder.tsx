@@ -41,29 +41,47 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
   const [draggedPlayer, setDraggedPlayer] = useState<string | null>(null);
   const dragSourceRef = useRef<DragSource | null>(null);
   const [savedTemplates, setSavedTemplates] = useState<StoredGroupTemplate[]>([]);
-  const [buffOverrides, setBuffOverrides] = useState<Record<string, boolean>>({});
+  // Player-keyed buff overrides: `${playerName}_${buffId}` -> true
+  // Overrides follow the player when dragged between groups
+  const [buffOverrides, setBuffOverrides] = useState<Set<string>>(new Set());
 
-  const toggleBuff = (groupIndex: number, buffId: string) => {
-    const key = `${groupIndex}_${buffId}`;
+  const toggleBuff = (groupIndex: number | 'pool', buffId: string, autoProvider: string | undefined, buff: { providerClass: string }) => {
     setBuffOverrides(prev => {
-      const next = { ...prev };
-      if (key in next) {
-        delete next[key];
-      } else {
-        next[key] = !prev[key];
+      const next = new Set(prev);
+      // If auto-detected provider exists, toggle override on that player
+      if (autoProvider) {
+        const key = `${autoProvider}_${buffId}`;
+        if (next.has(key)) next.delete(key); else next.add(key);
+        return next;
+      }
+      // No auto provider — find existing override for any player in this group
+      const groupPlayers = groupIndex !== 'pool' ? groups[groupIndex].players : [];
+      const existing = groupPlayers.find(p => next.has(`${p}_${buffId}`));
+      if (existing) {
+        next.delete(`${existing}_${buffId}`);
+        return next;
+      }
+      // Find a candidate of the right class to associate with
+      const candidate = groupPlayers.find(p => {
+        const entry = roster.find(r => getPlayerName(r) === p);
+        return entry && entry.class === buff.providerClass;
+      });
+      if (candidate) {
+        next.add(`${candidate}_${buffId}`);
       }
       return next;
     });
   };
 
-  const getBuffState = (groupIndex: number, buffId: string, autoActive: boolean): boolean => {
-    const key = `${groupIndex}_${buffId}`;
-    if (key in buffOverrides) return buffOverrides[key];
+  const getBuffActive = (playerNames: string[], buffId: string, autoActive: boolean): boolean => {
+    // Check if any player in this group has a manual override for this buff
+    const hasOverride = playerNames.some(p => buffOverrides.has(`${p}_${buffId}`));
+    if (hasOverride) return !autoActive; // override flips the auto state
     return autoActive;
   };
 
-  const isOverridden = (groupIndex: number, buffId: string): boolean => {
-    return `${groupIndex}_${buffId}` in buffOverrides;
+  const isOverridden = (playerNames: string[], buffId: string): boolean => {
+    return playerNames.some(p => buffOverrides.has(`${p}_${buffId}`));
   };
 
   useEffect(() => {
@@ -366,8 +384,8 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
               {/* Buff icons */}
               <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-gray-800">
                 {resolveGroupBuffs(group.players, roster).map(({ buff, active: autoActive, provider }) => {
-                  const shown = getBuffState(gi, buff.id, autoActive);
-                  const overridden = isOverridden(gi, buff.id);
+                  const shown = getBuffActive(group.players, buff.id, autoActive);
+                  const overridden = isOverridden(group.players, buff.id);
                   return (
                     <img
                       key={buff.id}
@@ -378,7 +396,7 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
                           ? `${buff.name} (manual${shown ? '' : ' — disabled'})`
                           : shown ? `${buff.name} (${provider})` : `${buff.name} — missing`
                       }
-                      onClick={() => toggleBuff(gi, buff.id)}
+                      onClick={() => toggleBuff(gi, buff.id, provider, buff)}
                       className={`w-4 h-4 rounded-sm cursor-pointer transition-all ${
                         shown ? '' : 'opacity-25 grayscale'
                       } ${overridden ? 'ring-1 ring-yellow-500/60' : ''}`}
