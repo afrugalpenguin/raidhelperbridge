@@ -77,7 +77,7 @@ local function CreateTab()
     -- Collapsed tab ----------------------------------------------------------
     tab = CreateFrame("Frame", "RHBTab", UIParent, "BackdropTemplate")
     tab:SetSize(TAB_WIDTH, TAB_HEIGHT)
-    tab:SetPoint("TOP", UIParent, "TOP", 0, 0)
+    tab:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 0, 0)
     tab:SetFrameStrata("HIGH")
     tab:SetClampedToScreen(true)
     tab:SetMovable(true)
@@ -102,7 +102,7 @@ local function CreateTab()
         -- Snap back to top edge, keep horizontal position
         local _, _, _, x, _ = self:GetPoint()
         self:ClearAllPoints()
-        self:SetPoint("TOP", UIParent, "TOP", x, 0)
+        self:SetPoint("TOPLEFT", UIParent, "TOPLEFT", math.max(0, x), 0)
         SaveTabPosition()
     end)
 
