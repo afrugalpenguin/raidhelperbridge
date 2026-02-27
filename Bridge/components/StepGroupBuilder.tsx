@@ -48,6 +48,7 @@ const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilde
   // Overrides follow the player when dragged between groups
   const [buffOverrides, setBuffOverrides] = useState<Set<string>>(initialBuffOverrides ?? new Set());
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle');
+  const [warningsExpanded, setWarningsExpanded] = useState(false);
   // Popover state: which buff icon is showing a candidate picker
   const [buffPopover, setBuffPopover] = useState<{ groupIndex: number; buffId: string; candidates: string[] } | null>(null);
 
@@ -500,6 +501,70 @@ const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilde
           );
         })}
       </div>
+
+      {/* Missing buff warnings */}
+      {(() => {
+        // Compute which buffs are available raid-wide (at least one provider exists)
+        const allPlayers = groups.flatMap(g => g.players);
+        const raidBuffs = resolveGroupBuffs(allPlayers, roster, buffOverrides);
+        const availableBuffIds = new Set(
+          raidBuffs
+            .filter(b => {
+              const hasOverride = allPlayers.some(p => buffOverrides.has(`${p}_${b.buff.id}`));
+              return hasOverride ? !b.active : b.active;
+            })
+            .map(b => b.buff.id)
+        );
+
+        // For each group, find which available buffs are missing
+        const groupWarnings = groups.map((g, gi) => {
+          const resolved = resolveGroupBuffs(g.players, roster, buffOverrides);
+          const missing = resolved.filter(b => {
+            if (!availableBuffIds.has(b.buff.id)) return false;
+            const active = g.players.some(p => buffOverrides.has(`${p}_${b.buff.id}`)) ? !b.active : b.active;
+            return !active;
+          });
+          return { groupIndex: gi, label: g.label, missing };
+        }).filter(w => w.missing.length > 0);
+
+        if (groupWarnings.length === 0) return null;
+
+        const totalMissing = groupWarnings.reduce((sum, w) => sum + w.missing.length, 0);
+
+        return (
+          <div className="mb-4">
+            <button
+              onClick={() => setWarningsExpanded(prev => !prev)}
+              className="flex items-center gap-2 text-sm text-amber-400 hover:text-amber-300 transition-colors"
+            >
+              <span>&#9888;</span>
+              <span>{groupWarnings.length} group{groupWarnings.length > 1 ? 's' : ''} missing buffs ({totalMissing} total)</span>
+              <span className={`transition-transform ${warningsExpanded ? 'rotate-90' : ''}`}>&#9656;</span>
+            </button>
+            {warningsExpanded && (
+              <div className="mt-2 space-y-1 pl-5">
+                {groupWarnings.map(w => (
+                  <div key={w.groupIndex} className="flex items-center gap-2 text-sm">
+                    <span className="text-gray-400 w-20 flex-shrink-0">{w.label}:</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {w.missing.map(b => (
+                        <div key={b.buff.id} className="flex items-center gap-1" title={b.buff.name}>
+                          <img
+                            src={`https://wow.zamimg.com/images/wow/icons/small/${b.buff.icon}.jpg`}
+                            alt={b.buff.name}
+                            className="w-4 h-4 rounded-sm opacity-50"
+                          />
+                          <span className="text-gray-500 text-xs">{b.buff.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Group cards grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
