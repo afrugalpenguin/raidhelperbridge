@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import type { RosterEntry } from '@/lib/rosterTypes';
 import type { GroupAssignment, StoredGroupTemplate } from '@/lib/groupSolver';
 import { autoAssignGroups, loadGroupTemplates, saveGroupTemplate, deleteGroupTemplate, applyGroupTemplate } from '@/lib/groupSolver';
-import { CLASS_COLORS } from '@/lib/constants';
+import { CLASS_COLORS, ROLE_LABELS } from '@/lib/constants';
+import type { RaidRole } from '@/lib/types';
 
 interface Props {
   roster: RosterEntry[];
@@ -258,6 +259,24 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
       <p className="text-gray-400 text-sm mb-4">
         Drag to a group to move, or onto a player to swap.
       </p>
+
+      {/* Role count summary */}
+      <div className="flex flex-wrap gap-4 mb-4 text-sm">
+        {(['tank', 'healer', 'mdps', 'rdps', 'dps'] as RaidRole[])
+          .map(role => {
+            const count = roster.filter(r => r.role === role).length;
+            if (count === 0) return null;
+            return (
+              <span key={role} className="text-gray-300">
+                <span className="text-gray-500">{ROLE_LABELS[role]}:</span> {count}
+              </span>
+            );
+          })
+        }
+        <span className="text-gray-300">
+          <span className="text-gray-500">Total:</span> {roster.length}
+        </span>
+      </div>
 
       {/* Group cards grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
