@@ -5,9 +5,12 @@ import type { EventData, RosterEntry } from '@/lib/rosterTypes';
 import { loadMappings, saveMapping } from '@/lib/characterMappings';
 import { autoResolveCC } from '@/lib/ccResolver';
 import type { CCAssignment } from '@/lib/ccResolver';
+import type { GroupAssignment } from '@/lib/groupSolver';
+import { autoAssignGroups, GROUP_PRESETS } from '@/lib/groupSolver';
 import StepFetchEvent from '@/components/StepFetchEvent';
 import StepMapNames from '@/components/StepMapNames';
 import StepCCRules from '@/components/StepCCRules';
+import StepGroupBuilder from '@/components/StepGroupBuilder';
 import StepGenerateImport from '@/components/StepGenerateImport';
 
 function extractEventId(input: string): string | null {
@@ -26,6 +29,7 @@ export default function Home() {
   const [event, setEvent] = useState<EventData | null>(null);
   const [roster, setRoster] = useState<RosterEntry[]>([]);
   const [ccAssignments, setCCAssignments] = useState<CCAssignment[]>([]);
+  const [groups, setGroups] = useState<GroupAssignment[]>([]);
 
   const fetchEvent = async () => {
     const eventId = extractEventId(urlInput);
@@ -59,6 +63,9 @@ export default function Home() {
       setRoster(rosterEntries);
       // Auto-resolve initial CC assignments
       setCCAssignments(autoResolveCC(rosterEntries));
+      // Auto-assign groups based on roster size
+      const defaultPreset = rosterEntries.length <= 10 ? GROUP_PRESETS['tbc-10'] : GROUP_PRESETS['tbc-25'];
+      setGroups(autoAssignGroups(rosterEntries, defaultPreset.templates));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
@@ -94,7 +101,7 @@ export default function Home() {
           <>
             <StepMapNames roster={roster} onUpdateName={updateWowName} />
             <StepCCRules roster={roster} assignments={ccAssignments} onChange={setCCAssignments} />
-            {/* Step 4 (groups) will go here later */}
+            <StepGroupBuilder roster={roster} groups={groups} onChange={setGroups} />
             <StepGenerateImport event={event!} roster={roster} />
           </>
         )}
