@@ -83,6 +83,7 @@ function assignByGroupNumber(roster: RosterEntry[]): GroupAssignment[] {
   const groupMap = new Map<number, string[]>();
 
   for (const entry of roster) {
+    if (entry.signupStatus !== 'confirmed') continue;
     const name = getPlayerName(entry);
     const gn = entry.groupNumber;
     if (gn != null && gn > 0) {
@@ -104,7 +105,8 @@ function assignByGroupNumber(roster: RosterEntry[]): GroupAssignment[] {
 }
 
 function assignSequential(roster: RosterEntry[]): GroupAssignment[] {
-  const numGroups = Math.min(Math.ceil(roster.length / 5), 5);
+  const confirmed = roster.filter(r => r.signupStatus === 'confirmed');
+  const numGroups = Math.min(Math.ceil(confirmed.length / 5), 5);
   const groups: GroupAssignment[] = [];
 
   for (let i = 0; i < numGroups; i++) {
@@ -115,7 +117,7 @@ function assignSequential(roster: RosterEntry[]): GroupAssignment[] {
     });
   }
 
-  for (const entry of roster) {
+  for (const entry of confirmed) {
     const name = getPlayerName(entry);
     for (const group of groups) {
       if (group.players.length < 5) {
