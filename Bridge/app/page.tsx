@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { RaidSignup, WowClass, RaidRole } from '@/lib/types';
+import { loadMappings, saveMapping } from '@/lib/characterMappings';
 
 interface EventData {
   eventId: string;
@@ -87,6 +88,7 @@ export default function Home() {
       }
       const data: EventData = await res.json();
       setEvent(data);
+      const stored = loadMappings();
       setRoster(
         data.signups.map((s) => ({
           discordId: s.discordId,
@@ -94,7 +96,7 @@ export default function Home() {
           class: s.class,
           role: s.role,
           spec: s.spec,
-          wowCharacter: '',
+          wowCharacter: stored[s.discordId] || '',
         }))
       );
     } catch (err) {
@@ -108,6 +110,7 @@ export default function Home() {
     setRoster((prev) => {
       const next = [...prev];
       next[index] = { ...next[index], wowCharacter: name };
+      saveMapping(next[index].discordId, name);
       return next;
     });
   };
