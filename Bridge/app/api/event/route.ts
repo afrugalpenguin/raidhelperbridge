@@ -49,8 +49,48 @@ const ROLE_NAME_MAP: Record<string, RaidRole> = {
     healers: 'healer',
 };
 
-function mapClassName(className: string): WowClass | null {
-    return CLASS_NAME_MAP[className.toLowerCase()] ?? null;
+// Raid-Helper sometimes uses role names (e.g. "Tank") as className.
+// Infer the actual WoW class from specName when className isn't a real class.
+const SPEC_TO_CLASS: Record<string, WowClass> = {
+    protection: 'WARRIOR',  // ambiguous (Warrior/Paladin), default Warrior
+    guardian: 'DRUID',
+    feral: 'DRUID',
+    balance: 'DRUID',
+    restoration: 'SHAMAN',  // ambiguous (Shaman/Druid), but Druid guardian/feral/balance covered above
+    holy: 'PALADIN',        // ambiguous (Paladin/Priest), default Paladin
+    discipline: 'PRIEST',
+    shadow: 'PRIEST',
+    retribution: 'PALADIN',
+    enhancement: 'SHAMAN',
+    elemental: 'SHAMAN',
+    arcane: 'MAGE',
+    fire: 'MAGE',
+    frost: 'MAGE',
+    affliction: 'WARLOCK',
+    demonology: 'WARLOCK',
+    destruction: 'WARLOCK',
+    arms: 'WARRIOR',
+    fury: 'WARRIOR',
+    beastmastery: 'HUNTER',
+    marksmanship: 'HUNTER',
+    survival: 'HUNTER',
+    assassination: 'ROGUE',
+    combat: 'ROGUE',
+    subtlety: 'ROGUE',
+};
+
+function mapClassName(className: string, specName?: string): WowClass | null {
+    const mapped = CLASS_NAME_MAP[className.toLowerCase()];
+    if (mapped) return mapped;
+
+    // Fallback: infer from spec name (strip trailing digits first)
+    if (specName) {
+        const cleanSpec = specName.replace(/\d+$/, '').toLowerCase();
+        const fromSpec = SPEC_TO_CLASS[cleanSpec];
+        if (fromSpec) return fromSpec;
+    }
+
+    return null;
 }
 
 function mapRoleName(roleName: string): RaidRole {
@@ -67,7 +107,7 @@ function transformSignup(signup: RaidHelperSignUp): RaidSignup | null {
         return null;
     }
 
-    const wowClass = mapClassName(signup.className);
+    const wowClass = mapClassName(signup.className, signup.specName);
     if (!wowClass) {
         return null;
     }
