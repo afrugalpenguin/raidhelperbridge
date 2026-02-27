@@ -1,5 +1,11 @@
 # Changelog
 
+**v1.0.6**
+
+- Tentative, bench, late, and absent signups now shown in separate pool boxes below raid groups — drag them into groups without refetching
+- Players not in the raidplan appear in Unassigned pool instead of being auto-stuffed into groups
+- Fixed dragged player staying dark after drop
+
 **v1.0.5**
 
 - Fixed class detection for specs shared between classes — Protection1 now correctly maps to Paladin (not Warrior), Holy1 to Paladin, Restoration to Druid, Restoration1 to Shaman
