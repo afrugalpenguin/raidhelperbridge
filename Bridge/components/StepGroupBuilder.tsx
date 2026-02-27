@@ -1,7 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import type { RosterEntry } from '@/lib/rosterTypes';
 import type { GroupAssignment } from '@/lib/groupSolver';
-import { GROUP_PRESETS, autoAssignGroups } from '@/lib/groupSolver';
+import { autoAssignGroups } from '@/lib/groupSolver';
 import { CLASS_COLORS } from '@/lib/constants';
 
 interface Props {
@@ -22,9 +22,6 @@ function getPlayerClass(roster: RosterEntry[], playerName: string): string | nul
 export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
   const [dragSource, setDragSource] = useState<{ groupIndex: number | 'pool'; playerName: string } | null>(null);
   const [dropTarget, setDropTarget] = useState<number | 'pool' | null>(null);
-  const [selectedPreset, setSelectedPreset] = useState<string>(
-    roster.length <= 10 ? 'tbc-10' : 'tbc-25'
-  );
 
   // Compute unassigned players
   const assignedNames = new Set(groups.flatMap(g => g.players));
@@ -32,21 +29,16 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
     .map(getPlayerName)
     .filter(name => !assignedNames.has(name));
 
-  const handlePresetChange = useCallback((presetKey: string) => {
-    setSelectedPreset(presetKey);
-    if (presetKey === 'custom') return;
-    const preset = GROUP_PRESETS[presetKey];
-    if (preset) {
-      onChange(autoAssignGroups(roster, preset.templates));
-    }
-  }, [roster, onChange]);
+  const handleReset = () => {
+    onChange(autoAssignGroups(roster));
+  };
 
-  const handleLabelChange = useCallback((groupIndex: number, label: string) => {
+  const handleLabelChange = (groupIndex: number, label: string) => {
     const updated = groups.map((g, i) =>
       i === groupIndex ? { ...g, label } : g
     );
     onChange(updated);
-  }, [groups, onChange]);
+  };
 
   // Drag handlers — encode source in dataTransfer for reliability
   const handleDragStart = (groupIndex: number | 'pool', playerName: string) => (e: React.DragEvent) => {
@@ -96,7 +88,6 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
     });
 
     onChange(updated);
-    setSelectedPreset('custom');
   };
 
   const handleDragEnd = () => {
@@ -108,16 +99,12 @@ export default function StepGroupBuilder({ roster, groups, onChange }: Props) {
     <section className="bg-gray-800 rounded-lg p-6 mb-6">
       <div className="flex items-center justify-between mb-1">
         <h2 className="text-lg font-semibold">4. Raid Groups</h2>
-        <select
-          value={selectedPreset}
-          onChange={(e) => handlePresetChange(e.target.value)}
-          className="bg-gray-700 border border-gray-600 rounded px-3 py-1 text-sm focus:outline-none focus:border-blue-500"
+        <button
+          onClick={handleReset}
+          className="text-sm text-gray-400 hover:text-white px-3 py-1 rounded border border-gray-600 hover:border-gray-400"
         >
-          {Object.entries(GROUP_PRESETS).map(([key, preset]) => (
-            <option key={key} value={key}>{preset.label}</option>
-          ))}
-          <option value="custom">Custom</option>
-        </select>
+          Reset
+        </button>
       </div>
       <p className="text-gray-400 text-sm mb-4">
         Drag players between groups to customize assignments.
