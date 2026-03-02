@@ -9,8 +9,8 @@ Before each release:
 
 ## Setup
 
-- **CurseForge project ID**: Replace `000000` in `.github/workflows/release.yml` once the project is created
-- **CF_API_KEY secret**: Add your CurseForge API token as a repository secret in GitHub Settings > Secrets
+- **CurseForge project ID**: `1476088` (configured in `.github/workflows/release.yml`)
+- **CF_API_KEY secret**: Configured as a repository secret in GitHub Settings > Secrets
 
 ## Version Tagging Rules
 

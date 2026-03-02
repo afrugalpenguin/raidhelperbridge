@@ -13,4 +13,5 @@ ignore:
   - .github
   - Bridge
   - docs
+  - CLAUDE.md
   - "*.md"

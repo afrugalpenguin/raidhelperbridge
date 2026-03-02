@@ -1,5 +1,13 @@
 # Changelog
 
+**v1.0.11**
+
+- CurseForge release workflow — addon is now packaged and uploaded automatically on version tags via BigWigs packager
+
+**v1.0.10**
+
+- Version bump and housekeeping
+
 **v1.0.9**
 
 - Group preview frame — visual UI showing proposed group layout with class-coloured names and Sort button; replaces chat-only output in the tab panel

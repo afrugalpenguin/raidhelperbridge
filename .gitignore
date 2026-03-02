@@ -20,6 +20,7 @@ Bridge/next-env.d.ts
 
 # Claude Code
 .claude/
+CLAUDE.md
 
 # OS
 Thumbs.db
