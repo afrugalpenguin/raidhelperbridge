@@ -24,6 +24,7 @@ local defaults = {
         debugMode = false,
         tabFramePos = nil,
         groupFramePos = nil,
+        tutorialComplete = false,
     },
 }
 
@@ -157,6 +158,8 @@ local function SlashHandler(msg)
         addon:TogglePlayerCCFrame()
     elseif cmd == "ccframe" then
         addon:ToggleLeaderCCFrame()
+    elseif cmd == "tutorial" then
+        addon:StartTutorial()
     elseif cmd == "mock" then
         local scenario = args[2] or "kara"
         addon:LoadMockEvent(scenario)
@@ -181,6 +184,7 @@ local function SlashHandler(msg)
         addon:Print("  /rhb who       - Check event players' raid status")
         addon:Print("  /rhb mycc      - Toggle your CC assignments window")
         addon:Print("  /rhb ccframe   - Toggle leader CC assignments window")
+        addon:Print("  /rhb tutorial - Replay the tutorial walkthrough")
         addon:Print("  /rhb mock [scenario] - Load mock data (kara/ssc/nocc/empty)")
         addon:Print("  /rhb debug     - Toggle debug mode")
         addon:Print("  /rhb clear     - Clear current event data")
@@ -221,6 +225,9 @@ RaidHelperBridge:SetScript("OnEvent", function(self, event, arg1)
         end
         if addon.InitInviteManager then
             addon:InitInviteManager()
+        end
+        if addon.InitTutorial then
+            addon:InitTutorial()
         end
     end
 

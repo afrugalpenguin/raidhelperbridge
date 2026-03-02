@@ -31,3 +31,4 @@ UI\MainFrame.lua
 UI\CCFrame.lua
 UI\GroupFrame.lua
 UI\TabFrame.lua
+UI\TutorialFrame.lua
