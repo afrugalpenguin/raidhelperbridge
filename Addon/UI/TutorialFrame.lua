@@ -56,10 +56,10 @@ local MOCK_EVENT = {
         { groupNumber = 5, players = { "Bearwall", "Chainheal", "Icebarrage", "Rapidfire", "Chaosbolt" } },
     },
     ccAssignments = {
-        { marker = 6, assignments = {{ ccType = "Polymorph",      playerName = "Frostweave" }} },
-        { marker = 5, assignments = {{ ccType = "Sap",            playerName = "Darkblade" }} },
-        { marker = 4, assignments = {{ ccType = "Shackle Undead", playerName = "Holygrace" }} },
-        { marker = 3, assignments = {{ ccType = "Freezing Trap",  playerName = "Arcaneshot" }} },
+        { marker = 6, assignments = {{ ccType = "polymorph",    playerName = "Frostweave" }} },
+        { marker = 5, assignments = {{ ccType = "sap",           playerName = "Darkblade" }} },
+        { marker = 4, assignments = {{ ccType = "shackle",       playerName = "Holygrace" }} },
+        { marker = 3, assignments = {{ ccType = "freezingtrap",  playerName = "Arcaneshot" }} },
     },
 }
 
@@ -176,7 +176,7 @@ local function CreateHighlightFrame()
     -- Pulse animation via OnUpdate
     local elapsed = 0
     frame:SetScript("OnUpdate", function(self, delta)
-        elapsed = elapsed + delta
+        elapsed = (elapsed + delta) % 100
         local alpha = math.sin(elapsed * 3) * 0.3 + 0.7
         self:SetBackdropBorderColor(0.4, 0.8, 1, alpha)
     end)
@@ -255,10 +255,11 @@ local function CreateTutorialPanel()
     title:SetJustifyH("LEFT")
     frame.title = title
 
-    -- Description (below title)
+    -- Description (below title, above tip area)
     local desc = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     desc:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
     desc:SetPoint("RIGHT", frame, "RIGHT", -PANEL_PAD, 0)
+    desc:SetMaxLines(6)
     desc:SetJustifyH("LEFT")
     desc:SetWordWrap(true)
     desc:SetSpacing(2)
@@ -375,6 +376,10 @@ end
 --------------------------------------------------------------------------------
 
 function addon:StartTutorial()
+    if tutorialActive then
+        ShowStep(currentStep)
+        return
+    end
     LoadMockData()
     tutorialActive = true
     currentStep = 1
