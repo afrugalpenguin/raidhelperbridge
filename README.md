@@ -147,7 +147,7 @@ This outputs an `!RHB!...` string you can paste into the addon's import dialog, 
 
 1. **Create event** in Raid-Helper on Discord
 2. **Wait for signups**
-3. **Open Bridge web app** at [raidhelperbridge.vercel.app](https://raidhelperbridge.vercel.app), paste your event URL
+3. **Open Bridge web app** (see [Hosting the Bridge](#hosting-the-bridge) below), paste your event URL
 4. **Map names** — link Discord usernames to WoW character names (saved automatically)
 5. **Configure CC rules** — assign markers to players with class-filtered abilities
 6. **Build groups** — drag-and-drop group assignment or use TBC presets
@@ -168,8 +168,8 @@ The Bridge resolves generic rules like "1st Mage" into actual player names from 
     { ccType = "banish", classOrder = 1 },     -- "1st Warlock"
 }}
 
--- With signups: Frostbolt (Mage), Icyveins (Mage), Dotmaster (Warlock)
--- Resolves to: Square -> Frostbolt (polymorph), fallback Dotmaster (banish)
+-- With signups: Castborn (Mage), Icyveins (Mage), Dotmaster (Warlock)
+-- Resolves to: Square -> Castborn (polymorph), also CCs Dotmaster (banish)
 ```
 
 When you mark a mob as Square in-game:
@@ -210,18 +210,43 @@ Decompressed JSON payload:
 ## Development
 
 ### Tech Stack
-- **Addon**: Lua 5.1 (WoW TBC 2.5.4, Interface 20504), raw WoW API (no Ace3), LibDeflate for decompression
+- **Addon**: Lua 5.1 (WoW TBC Anniversary 2.5.5, Interface 20505), raw WoW API (no Ace3), LibDeflate for decompression
 - **Bridge**: Next.js 14, TypeScript, pako for compression
 
 ### Testing Without the Bridge
 
 Use `/rhb mock` in-game to load a 10-player Karazhan raid with CC assignments. This lets you test all addon features without needing the web app running.
 
-### Deployment
+### Hosting the Bridge
 
-The Bridge web app is deployed on [Vercel](https://vercel.com) with root directory set to `Bridge/`. Pushes to `main` trigger auto-deployment.
+The Bridge is a standard Next.js 14 app with no database, no environment variables, and no secrets. It can run anywhere that supports Node.js.
 
-Live: [raidhelperbridge.vercel.app](https://raidhelperbridge.vercel.app)
+**Option 1: Deploy to Vercel (recommended, free)**
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fafrugalpenguin%2Fraidhelperbridge&root-directory=Bridge)
+
+Click the button above to deploy your own instance. Vercel's free tier is more than enough for guild use.
+
+**Option 2: Deploy to any Node.js host**
+
+```bash
+cd Bridge
+npm install
+npm run build
+npm start
+```
+
+Works on Railway, Render, Fly.io, a VPS, or any platform that can run a Next.js app. No configuration needed.
+
+**Option 3: Run locally**
+
+```bash
+cd Bridge
+npm install
+npm run dev
+```
+
+Opens at `http://localhost:3000`. Fine for personal use — just run it when you need to generate an import string.
 
 ## TODO
 
@@ -234,7 +259,9 @@ Live: [raidhelperbridge.vercel.app](https://raidhelperbridge.vercel.app)
 - [x] Bridge group template builder UI
 - [x] Vitest test suite
 - [x] Vercel deployment
-- [ ] Full in-game CC template editor UI (v2)
+- [x] In-game CC assignment editor (add/remove markers, change players and CC types)
+- [x] Multi-CC per marker (shared responsibility based on mob type)
+- [x] 10-man split raid mode
 - [ ] Full in-game group template editor UI (v2)
 - [ ] End-to-end in-game testing
 
