@@ -14,6 +14,8 @@ import StepMapNames from '@/components/StepMapNames';
 import StepCCRules from '@/components/StepCCRules';
 import StepGroupBuilder from '@/components/StepGroupBuilder';
 import StepGenerateImport from '@/components/StepGenerateImport';
+import StepSplitRaids from '@/components/StepSplitRaids';
+import RaidPanel from '@/components/RaidPanel';
 
 function extractEventId(input: string): string | null {
   const trimmed = input.trim();
@@ -118,6 +120,25 @@ export default function Home() {
     }
   }, [fetchEventById]);
 
+  // Auto-resolve CC and groups when raid splits change
+  useEffect(() => {
+    if (raidMode !== '10-man-split') return;
+
+    const newCC: [CCAssignment[], CCAssignment[]] = [[], []];
+    const newGroups: [GroupAssignment[], GroupAssignment[]] = [[], []];
+
+    for (let i = 0; i < 2; i++) {
+      const raidRoster = raidSplits[i];
+      if (raidRoster.length > 0) {
+        newCC[i] = autoResolveCC(raidRoster);
+        newGroups[i] = autoAssignGroups(raidRoster);
+      }
+    }
+
+    setRaidCCAssignments(newCC);
+    setRaidGroups(newGroups);
+  }, [raidSplits, raidMode]);
+
   const updateWowName = (index: number, name: string) => {
     setRoster((prev) => {
       const next = [...prev];
@@ -197,7 +218,51 @@ export default function Home() {
             )}
 
             {raidMode === '10-man-split' && event && (
-              <div className="text-zinc-400 text-center py-8">Split UI placeholder</div>
+              <>
+                <StepSplitRaids
+                  roster={roster}
+                  splits={raidSplits}
+                  onChange={setRaidSplits}
+                />
+
+                {(raidSplits[0].length > 0 || raidSplits[1].length > 0) && (
+                  <div className="mt-6">
+                    <div className="flex gap-2 mb-4">
+                      {([0, 1] as const).map(i => (
+                        <button
+                          key={i}
+                          onClick={() => setActiveRaidTab(i)}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            activeRaidTab === i
+                              ? 'bg-indigo-600 text-white'
+                              : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                          }`}
+                        >
+                          Raid {i + 1} ({raidSplits[i].length})
+                        </button>
+                      ))}
+                    </div>
+
+                    <RaidPanel
+                      raidLabel={`Raid ${activeRaidTab + 1}`}
+                      event={event}
+                      roster={raidSplits[activeRaidTab]}
+                      ccAssignments={raidCCAssignments[activeRaidTab]}
+                      onCCChange={(assignments) => {
+                        const updated = [...raidCCAssignments] as [CCAssignment[], CCAssignment[]];
+                        updated[activeRaidTab] = assignments;
+                        setRaidCCAssignments(updated);
+                      }}
+                      groups={raidGroups[activeRaidTab]}
+                      onGroupsChange={(newGroups) => {
+                        const updated = [...raidGroups] as [GroupAssignment[], GroupAssignment[]];
+                        updated[activeRaidTab] = newGroups;
+                        setRaidGroups(updated);
+                      }}
+                    />
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
