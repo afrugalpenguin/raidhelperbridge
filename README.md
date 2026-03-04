@@ -148,7 +148,7 @@ This outputs an `!RHB!...` string you can paste into the addon's import dialog, 
 1. **Create event** in Raid-Helper on Discord
 2. **Wait for signups**
 3. **Open Bridge web app** (see [Hosting the Bridge](#hosting-the-bridge) below), paste your event URL
-4. **Map names** — link Discord usernames to WoW character names (saved automatically)
+4. **Map names** *(optional)* — link Discord usernames to WoW character names. Required for `/rhb invite` to work
 5. **Configure CC rules** — assign markers to players with class-filtered abilities
 6. **Build groups** — drag-and-drop group assignment or use TBC presets
 7. **Generate import string** and copy it
