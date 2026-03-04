@@ -130,8 +130,11 @@ export default function Home() {
     for (let i = 0; i < 2; i++) {
       const raidRoster = raidSplits[i];
       if (raidRoster.length > 0) {
-        newCC[i] = autoResolveCC(raidRoster);
-        newGroups[i] = autoAssignGroups(raidRoster);
+        // Strip groupNumber so autoAssignGroups uses sequential (2 groups of 5)
+        // instead of the original 25-man raidplan groupings
+        const stripped = raidRoster.map(r => ({ ...r, groupNumber: undefined }));
+        newCC[i] = autoResolveCC(stripped);
+        newGroups[i] = autoAssignGroups(stripped);
       }
     }
 
