@@ -1,5 +1,10 @@
 # Changelog
 
+**v1.1.0**
+
+- Tutorial walkthrough system — interactive step-by-step guide for new users covering import, groups, CC, and invite features
+- Clickable marker buttons in leader CC frame — click a marker icon to apply the raid marker to your target and whisper the assigned player a CC reminder with mob name
+
 **v1.0.11**
 
 - CurseForge release workflow — addon is now packaged and uploaded automatically on version tags via BigWigs packager
