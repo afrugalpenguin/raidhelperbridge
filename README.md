@@ -97,7 +97,7 @@ RaidHelperBridge/
 
 1. Copy the `Addon` folder to your WoW addons directory:
    ```
-   World of Warcraft/_classic_/Interface/AddOns/RaidHelperBridge
+   World of Warcraft/_anniversary_/Interface/AddOns/RaidHelperBridge
    ```
 
 2. Libraries (LibStub and LibDeflate) are included in `Addon/Libs/` — no extra downloads needed.
