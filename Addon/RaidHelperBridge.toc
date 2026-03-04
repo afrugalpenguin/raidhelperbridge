@@ -1,4 +1,4 @@
-## Interface: 20504
+## Interface: 20505
 ## Title: Raid Helper Bridge
 ## Notes: Bridges Discord Raid-Helper signups with in-game raid management
 ## Author: Mac

@@ -18,7 +18,7 @@ local BUTTONS = {
     { label = "Status",   method = "ShowStatus",            icon = "Interface\\Icons\\INV_Misc_Note_05" },
     { label = "Import",   method = "ShowImportDialog",      icon = "Interface\\Icons\\INV_Letter_15" },
     { label = "CC View",  method = "ToggleLeaderCCFrame",   icon = "Interface\\Icons\\Spell_Nature_Polymorph" },
-    { label = "My CC",    method = "TogglePlayerCCFrame",   icon = "Interface\\Icons\\Ability_Creature_Cursed_04" },
+    { label = "My CC",    method = nil,                      icon = "Interface\\Icons\\Ability_Creature_Cursed_04" },
     { label = "Groups",   method = "ToggleGroupFrame",       icon = "Interface\\Icons\\Achievement_GuildPerk_EverybodysFriend" },
     { label = "Invite",   method = "SendRaidInvites",       icon = "Interface\\Icons\\INV_Letter_04" },
     { label = "Sort",     method = "ApplyGroupLayout",      icon = "Interface\\Icons\\INV_Misc_GroupNeedMore" },
@@ -40,6 +40,8 @@ local function CancelHideTimer()
 end
 
 local function ScheduleHide()
+    -- Don't auto-hide during tutorial
+    if addon.IsTutorialActive and addon:IsTutorialActive() then return end
     CancelHideTimer()
     hideTimer = C_Timer.NewTimer(HIDE_DELAY, function()
         hideTimer = nil
@@ -151,8 +153,9 @@ local function CreateTab()
     panel:SetScript("OnLeave", function() ScheduleHide() end)
 
     -- Buttons ----------------------------------------------------------------
+    addon.tabButtons = {}
     for i, info in ipairs(BUTTONS) do
-        local btn = CreateFrame("Button", nil, panel)
+        local btn = CreateFrame("Button", "RHBTabBtn_" .. info.label:gsub("%s", ""), panel)
         btn:SetSize(BTN_WIDTH, BTN_HEIGHT)
         btn:SetPoint("TOPLEFT", panel, "TOPLEFT", PANEL_PAD, -PANEL_PAD - (i - 1) * BTN_HEIGHT)
 
@@ -182,9 +185,31 @@ local function CreateTab()
         -- Keep panel open while hovering a button
         btn:SetScript("OnEnter", function() CancelHideTimer() end)
         btn:SetScript("OnLeave", function() ScheduleHide() end)
+
+        addon.tabButtons[info.label] = btn
+
+        -- Add right-aligned marker icon to "My CC" button
+        if info.label == "My CC" then
+            local markerIcon = btn:CreateTexture(nil, "ARTWORK")
+            markerIcon:SetSize(ICON_SIZE, ICON_SIZE)
+            markerIcon:SetPoint("RIGHT", btn, "RIGHT", -4, 0)
+            markerIcon:Hide()
+            btn.markerIcon = markerIcon
+        end
     end
 
     panel:Hide()
+
+    -- Expose expand/show for tutorial use
+    addon.ExpandTabPanel = function()
+        ExpandTab()
+        ShowPanel()
+        CancelHideTimer()
+    end
+    addon.CollapseTabPanel = function()
+        if panel then panel:Hide() end
+        CollapseTab()
+    end
 
     -- Restore saved position
     RestoreTabPosition()

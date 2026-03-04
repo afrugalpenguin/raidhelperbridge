@@ -103,22 +103,34 @@ local steps = {
         title = "Importing Data",
         description = "Visit the RaidHelperBridge website, paste your Raid-Helper event link, build your groups, then copy the import string. In-game, click the Import button on the tab or type /rhb import to paste it in.",
         tip = "You can also right-click the minimap button to open the import dialog.",
-        getFrame = function() return _G["RHBTab"] end,
+        getFrame = function() return addon.tabButtons and addon.tabButtons["Import"] end,
+        action = function()
+            if addon.ExpandTabPanel then addon.ExpandTabPanel() end
+        end,
+        cleanup = function()
+            if addon.CollapseTabPanel then addon.CollapseTabPanel() end
+        end,
     },
     {
         id = "invite_sort",
         title = "Inviting & Sorting",
         description = "Once data is imported, click Invite to send raid invites to all event players. After everyone is in the raid, click Sort to move players into their assigned groups.",
-        getFrame = function() return _G["RHBTab"] end,
+        getFrame = function() return addon.tabButtons and addon.tabButtons["Invite"] end,
+        action = function()
+            if addon.ExpandTabPanel then addon.ExpandTabPanel() end
+        end,
+        cleanup = function()
+            if addon.CollapseTabPanel then addon.CollapseTabPanel() end
+        end,
     },
     {
         id = "cc",
         title = "CC Assignments",
         description = "The CC frame shows crowd control assignments. Each player sees their own assignment, and raid leaders can view everyone's assignments at a glance.",
         tip = "When you place a raid marker, the assigned player is automatically whispered their CC target.",
-        getFrame = function() return _G["RHBLeaderCCFrame"] end,
+        getFrame = function() return addon.tabButtons and addon.tabButtons["CC View"] end,
         action = function()
-            -- Ensure the CC frame is open so the user can see it
+            if addon.ExpandTabPanel then addon.ExpandTabPanel() end
             if not (_G["RHBLeaderCCFrame"] and _G["RHBLeaderCCFrame"]:IsShown()) then
                 addon:ToggleLeaderCCFrame()
             end
@@ -127,15 +139,16 @@ local steps = {
             if _G["RHBLeaderCCFrame"] and _G["RHBLeaderCCFrame"]:IsShown() then
                 _G["RHBLeaderCCFrame"]:Hide()
             end
+            if addon.CollapseTabPanel then addon.CollapseTabPanel() end
         end,
     },
     {
         id = "groups",
         title = "Group Preview",
         description = "The Groups frame shows the planned group layout with class-coloured names. Use this to check assignments before sorting.",
-        getFrame = function() return _G["RHBGroupFrame"] end,
+        getFrame = function() return addon.tabButtons and addon.tabButtons["Groups"] end,
         action = function()
-            -- Ensure the group frame is open so the user can see it
+            if addon.ExpandTabPanel then addon.ExpandTabPanel() end
             if not (_G["RHBGroupFrame"] and _G["RHBGroupFrame"]:IsShown()) then
                 addon:ToggleGroupFrame()
             end
@@ -144,6 +157,7 @@ local steps = {
             if _G["RHBGroupFrame"] and _G["RHBGroupFrame"]:IsShown() then
                 _G["RHBGroupFrame"]:Hide()
             end
+            if addon.CollapseTabPanel then addon.CollapseTabPanel() end
         end,
     },
     {

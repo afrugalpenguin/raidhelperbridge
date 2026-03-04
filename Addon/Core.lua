@@ -290,7 +290,7 @@ function addon:LoadMockEvent(scenario)
             players = {
                 { name = "Tankadin", class = "PALADIN", role = "tank", spec = "protection" },
                 { name = "Beartank", class = "DRUID", role = "tank", spec = "feral" },
-                { name = "Frostbolt", class = "MAGE", role = "rdps", spec = "frost" },
+                { name = "Castborn", class = "MAGE", role = "rdps", spec = "frost" },
                 { name = "Icyveins", class = "MAGE", role = "rdps", spec = "frost" },
                 { name = "Dotmaster", class = "WARLOCK", role = "rdps", spec = "affliction" },
                 { name = "Backstab", class = "ROGUE", role = "mdps", spec = "combat" },
@@ -300,7 +300,7 @@ function addon:LoadMockEvent(scenario)
                 { name = "Spiritlink", class = "SHAMAN", role = "healer", spec = "restoration" },
             },
             ccAssignments = {
-                { marker = 6, assignments = {{ ccType = "polymorph", playerName = "Frostbolt" }} },
+                { marker = 6, assignments = {{ ccType = "polymorph", playerName = "Castborn" }} },
                 { marker = 5, assignments = {{ ccType = "polymorph", playerName = "Icyveins" }} },
                 { marker = 4, assignments = {{ ccType = "banish", playerName = "Dotmaster" }} },
                 { marker = 3, assignments = {{ ccType = "freezingtrap", playerName = "Windrunner" }} },
@@ -332,7 +332,7 @@ function addon:LoadMockEvent(scenario)
                 { name = "Stormstrike", class = "SHAMAN", role = "mdps", spec = "enhancement" },
                 { name = "Catswipe", class = "DRUID", role = "mdps", spec = "feral" },
                 -- Ranged DPS
-                { name = "Frostbolt", class = "MAGE", role = "rdps", spec = "frost" },
+                { name = "Castborn", class = "MAGE", role = "rdps", spec = "frost" },
                 { name = "Icyveins", class = "MAGE", role = "rdps", spec = "fire" },
                 { name = "Arcanemiss", class = "MAGE", role = "rdps", spec = "arcane" },
                 { name = "Dotmaster", class = "WARLOCK", role = "rdps", spec = "affliction" },
@@ -346,7 +346,7 @@ function addon:LoadMockEvent(scenario)
                 { name = "Holyshock", class = "PALADIN", role = "mdps", spec = "retribution" },
             },
             ccAssignments = {
-                { marker = 6, assignments = {{ ccType = "polymorph", playerName = "Frostbolt" }} },
+                { marker = 6, assignments = {{ ccType = "polymorph", playerName = "Castborn" }} },
                 { marker = 5, assignments = {{ ccType = "polymorph", playerName = "Icyveins" }} },
                 { marker = 4, assignments = {{ ccType = "banish", playerName = "Dotmaster" }} },
                 { marker = 3, assignments = {{ ccType = "freezingtrap", playerName = "Windrunner" }} },
@@ -366,7 +366,7 @@ function addon:LoadMockEvent(scenario)
                 { name = "Tankadin", class = "PALADIN", role = "tank", spec = "protection" },
                 { name = "Beartank", class = "DRUID", role = "tank", spec = "feral" },
                 { name = "Shieldwall", class = "WARRIOR", role = "tank", spec = "protection" },
-                { name = "Frostbolt", class = "MAGE", role = "rdps", spec = "frost" },
+                { name = "Castborn", class = "MAGE", role = "rdps", spec = "frost" },
                 { name = "Dotmaster", class = "WARLOCK", role = "rdps", spec = "affliction" },
                 { name = "Backstab", class = "ROGUE", role = "mdps", spec = "combat" },
                 { name = "Windrunner", class = "HUNTER", role = "rdps", spec = "beastmastery" },

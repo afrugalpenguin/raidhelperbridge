@@ -164,7 +164,7 @@ export default function StepCCRules({ roster, assignments, onChange }: Props) {
                     ))}
                   </select>
                 ) : (
-                  <span className="text-gray-500 text-xs w-28 text-right flex-shrink-0 pr-2">fallback</span>
+                  <span className="text-gray-500 text-xs w-28 text-right flex-shrink-0 pr-2">also CCs</span>
                 )}
 
                 {/* CC type dropdown */}
@@ -215,7 +215,7 @@ export default function StepCCRules({ roster, assignments, onChange }: Props) {
                   <button
                     onClick={() => handleAddFallback(ai)}
                     className="text-gray-400 hover:text-white text-sm px-2 py-1 rounded hover:bg-gray-700 flex-shrink-0"
-                    title="Add fallback"
+                    title="Add another CC to this marker"
                   >
                     +
                   </button>

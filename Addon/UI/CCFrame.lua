@@ -5,9 +5,13 @@ local addonName, addon = ...
 -- Leader frame: shows all CC assignments for the raid
 
 local ROW_HEIGHT = 20
+local LEADER_ROW_HEIGHT = 24
 local ICON_SIZE = 16
 local PADDING = 8
 local TITLE_HEIGHT = 24
+local DROPDOWN_WIDTH = 120
+local REMOVE_BTN_SIZE = 16
+local ADD_BTN_HEIGHT = 24
 
 -- Shared: save frame position to charDb
 local function SaveFramePosition(frame, key)
@@ -133,44 +137,6 @@ local function HideExtraRows(frame, startIndex)
     end
 end
 
--- Leader-specific: create or reuse a row with a clickable marker button
-local function GetLeaderRow(frame, index)
-    if frame.rows[index] then
-        frame.rows[index]:Show()
-        return frame.rows[index]
-    end
-
-    local row = CreateFrame("Frame", nil, frame.content)
-    row:SetHeight(ROW_HEIGHT)
-    row:SetPoint("TOPLEFT", frame.content, "TOPLEFT", 0, -((index - 1) * ROW_HEIGHT))
-    row:SetPoint("RIGHT", frame.content, "RIGHT", 0, 0)
-
-    -- Clickable marker button instead of static texture
-    local btn = CreateFrame("Button", nil, row)
-    btn:SetSize(ICON_SIZE, ICON_SIZE)
-    btn:SetPoint("LEFT", row, "LEFT", 0, 0)
-    btn:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
-    btn:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:SetText("Click to mark target and whisper")
-        GameTooltip:Show()
-    end)
-    btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
-    row.btn = btn
-
-    -- Keep icon ref for compatibility with HideExtraRows pattern
-    row.icon = btn
-
-    local text = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    text:SetPoint("LEFT", btn, "RIGHT", 6, 0)
-    text:SetPoint("RIGHT", row, "RIGHT", 0, 0)
-    text:SetJustifyH("LEFT")
-    row.text = text
-
-    frame.rows[index] = row
-    return row
-end
-
 -- Format class-colored player name
 local function ClassColoredName(playerName, className)
     local color = addon.CLASS_COLORS[className]
@@ -257,70 +223,421 @@ function addon:TogglePlayerCCFrame()
 end
 
 --------------------------------------------------------------------------------
--- Leader CC Frame ("CC Assignments")
+-- Leader CC Frame ("CC Assignments") — editable
 --------------------------------------------------------------------------------
 
 local leaderFrame
 
+-- Dropdown frames (created once, reused)
+local ccDropdownFrame = CreateFrame("Frame", "RHBCCDropdown", UIParent, "UIDropDownMenuTemplate")
+ccDropdownFrame:Hide()
+local addCCDropdownFrame = CreateFrame("Frame", "RHBCCAddDropdown", UIParent, "UIDropDownMenuTemplate")
+addCCDropdownFrame:Hide()
+
+-- Forward declaration
+local RefreshLeaderCCFrame
+
 local function CreateLeaderCCFrame()
     if leaderFrame then return leaderFrame end
-    leaderFrame = CreateCCFrame("RHBLeaderCCFrame", "CC Assignments", 280, 180, "leaderCCFramePos")
+    leaderFrame = CreateCCFrame("RHBLeaderCCFrame", "CC Assignments", 340, 180, "leaderCCFramePos")
+    if leaderFrame.SetResizeBounds then
+        leaderFrame:SetResizeBounds(300, 60, 500, 600)
+    end
     return leaderFrame
 end
 
-local function RefreshLeaderCCFrame()
+-- Create or reuse an editable leader row
+local function GetLeaderRow(frame, index)
+    if frame.rows[index] then
+        frame.rows[index]:Show()
+        return frame.rows[index]
+    end
+
+    local row = CreateFrame("Frame", nil, frame.content)
+    row:SetHeight(LEADER_ROW_HEIGHT)
+    row:SetPoint("TOPLEFT", frame.content, "TOPLEFT", 0, -((index - 1) * LEADER_ROW_HEIGHT))
+    row:SetPoint("RIGHT", frame.content, "RIGHT", 0, 0)
+
+    -- Marker icon button (click to mark target + whisper)
+    local btn = CreateFrame("Button", nil, row)
+    btn:SetSize(ICON_SIZE, ICON_SIZE)
+    btn:SetPoint("LEFT", row, "LEFT", 0, 0)
+    btn:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+    btn:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Click to mark target and whisper")
+        GameTooltip:Show()
+    end)
+    btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    row.btn = btn
+    row.icon = btn
+
+    -- Marker name label
+    local markerLabel = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    markerLabel:SetPoint("LEFT", btn, "RIGHT", 4, 0)
+    markerLabel:SetWidth(50)
+    markerLabel:SetJustifyH("LEFT")
+    row.markerLabel = markerLabel
+
+    -- Player name button (clickable, opens dropdown)
+    local playerBtn = CreateFrame("Button", nil, row)
+    playerBtn:SetSize(DROPDOWN_WIDTH, LEADER_ROW_HEIGHT - 4)
+    playerBtn:SetPoint("LEFT", markerLabel, "RIGHT", 2, 0)
+    playerBtn:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
+
+    local playerText = playerBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    playerText:SetPoint("LEFT", playerBtn, "LEFT", 2, 0)
+    playerText:SetPoint("RIGHT", playerBtn, "RIGHT", -2, 0)
+    playerText:SetJustifyH("LEFT")
+    row.playerBtn = playerBtn
+    row.playerText = playerText
+
+    -- CC type button (clickable, opens dropdown)
+    local ccBtn = CreateFrame("Button", nil, row)
+    ccBtn:SetSize(100, LEADER_ROW_HEIGHT - 4)
+    ccBtn:SetPoint("LEFT", playerBtn, "RIGHT", 2, 0)
+    ccBtn:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
+
+    local ccLabel = ccBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    ccLabel:SetPoint("LEFT", ccBtn, "LEFT", 2, 0)
+    ccLabel:SetPoint("RIGHT", ccBtn, "RIGHT", -2, 0)
+    ccLabel:SetJustifyH("LEFT")
+    ccLabel:SetTextColor(0.6, 0.6, 0.6)
+    row.ccBtn = ccBtn
+    row.ccLabel = ccLabel
+
+    -- Remove button (X)
+    local removeBtn = CreateFrame("Button", nil, row)
+    removeBtn:SetSize(REMOVE_BTN_SIZE, REMOVE_BTN_SIZE)
+    removeBtn:SetPoint("RIGHT", row, "RIGHT", 0, 0)
+    removeBtn:SetNormalTexture("Interface\\Buttons\\UI-StopButton")
+    removeBtn:SetHighlightTexture("Interface\\Buttons\\UI-StopButton", "ADD")
+    removeBtn:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Remove this CC assignment")
+        GameTooltip:Show()
+    end)
+    removeBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    row.removeBtn = removeBtn
+
+    frame.rows[index] = row
+    return row
+end
+
+-- Remove a player from all CC assignments (one player = one marker)
+local function RemovePlayerFromAllCC(playerName)
+    local event = addon:GetCurrentEvent()
+    if not event or not event.ccAssignments then return end
+
+    for i = #event.ccAssignments, 1, -1 do
+        local a = event.ccAssignments[i]
+        for j = #a.assignments, 1, -1 do
+            if a.assignments[j].playerName == playerName then
+                table.remove(a.assignments, j)
+            end
+        end
+        if #a.assignments == 0 then
+            table.remove(event.ccAssignments, i)
+        end
+    end
+end
+
+-- Show player dropdown for a CC assignment row
+local function ShowPlayerDropdown(row, assignmentIdx, markerAssignment)
+    local cc = markerAssignment.assignments[assignmentIdx]
+    local ccType = cc.ccType
+    local requiredClass = addon.CC_ABILITIES[ccType] and addon.CC_ABILITIES[ccType].class
+
+    UIDropDownMenu_Initialize(ccDropdownFrame, function()
+        local event = addon:GetCurrentEvent()
+        if not event or not event.players then return end
+
+        local sorted = {}
+        for _, p in ipairs(event.players) do
+            tinsert(sorted, { name = p.name, class = p.class })
+        end
+        table.sort(sorted, function(a, b) return a.name < b.name end)
+
+        for _, p in ipairs(sorted) do
+            local info = UIDropDownMenu_CreateInfo()
+            info.text = p.name
+            info.notCheckable = true
+
+            local color = addon.CLASS_COLORS[p.class]
+            if color then
+                info.colorCode = format("|cFF%02x%02x%02x", color.r * 255, color.g * 255, color.b * 255)
+            end
+
+            -- Amber warning if class can't do this CC
+            local canDoCC = (requiredClass == nil) or (p.class == requiredClass)
+            if not canDoCC then
+                info.colorCode = "|cFFFF8800"
+            end
+
+            info.func = function()
+                RemovePlayerFromAllCC(p.name)
+                cc.playerName = p.name
+                addon:RefreshCCFrames()
+                CloseDropDownMenus()
+            end
+            UIDropDownMenu_AddButton(info)
+        end
+    end, "MENU")
+
+    ToggleDropDownMenu(1, nil, ccDropdownFrame, row.playerBtn, 0, 0)
+end
+
+-- Show CC type dropdown for a CC assignment row
+local function ShowCCTypeDropdown(row, assignmentIdx, markerAssignment)
+    local cc = markerAssignment.assignments[assignmentIdx]
+
+    UIDropDownMenu_Initialize(ccDropdownFrame, function()
+        -- Sort CC types alphabetically
+        local ccTypes = {}
+        for ccType, data in pairs(addon.CC_ABILITIES) do
+            if not data.soft and not data.aoe then
+                tinsert(ccTypes, { id = ccType, data = data })
+            end
+        end
+        table.sort(ccTypes, function(a, b) return a.id < b.id end)
+
+        for _, entry in ipairs(ccTypes) do
+            local info = UIDropDownMenu_CreateInfo()
+            info.text = "|T" .. (entry.data.icon or "") .. ":14|t " .. entry.id
+            info.notCheckable = true
+            info.checked = (cc.ccType == entry.id)
+
+            info.func = function()
+                cc.ccType = entry.id
+                addon:RefreshCCFrames()
+                CloseDropDownMenus()
+            end
+            UIDropDownMenu_AddButton(info)
+        end
+    end, "MENU")
+
+    ToggleDropDownMenu(1, nil, ccDropdownFrame, row.ccBtn, 0, 0)
+end
+
+-- Remove a single CC assignment; clean up empty markers
+local function RemoveCCAssignment(markerAssignment, assignmentIdx)
+    table.remove(markerAssignment.assignments, assignmentIdx)
+
+    if #markerAssignment.assignments == 0 then
+        local ccAssignments = addon.charDb.currentEvent.ccAssignments
+        for i, a in ipairs(ccAssignments) do
+            if a == markerAssignment then
+                table.remove(ccAssignments, i)
+                break
+            end
+        end
+    end
+
+    addon:RefreshCCFrames()
+end
+
+-- Remove a player from all CC assignments (one player = one marker)
+-- Add a new CC assignment for a marker + ccType
+local function AddNewCCAssignment(markerIdx, ccType)
+    local event = addon:GetCurrentEvent()
+    if not event then return end
+    if not event.ccAssignments then
+        event.ccAssignments = {}
+    end
+
+    local requiredClass = addon.CC_ABILITIES[ccType] and addon.CC_ABILITIES[ccType].class
+    local playerName = "Unassigned"
+
+    if event.players and requiredClass then
+        for _, p in ipairs(event.players) do
+            if p.class == requiredClass then
+                local alreadyUsed = false
+                for _, a in ipairs(event.ccAssignments) do
+                    for _, cc in ipairs(a.assignments) do
+                        if cc.playerName == p.name then
+                            alreadyUsed = true
+                            break
+                        end
+                    end
+                    if alreadyUsed then break end
+                end
+                if not alreadyUsed then
+                    playerName = p.name
+                    break
+                end
+            end
+        end
+    end
+
+    -- Find existing marker entry or create new one
+    local existing
+    for _, a in ipairs(event.ccAssignments) do
+        if a.marker == markerIdx then
+            existing = a
+            break
+        end
+    end
+
+    if existing then
+        tinsert(existing.assignments, { ccType = ccType, playerName = playerName })
+    else
+        tinsert(event.ccAssignments, {
+            marker = markerIdx,
+            assignments = {{ ccType = ccType, playerName = playerName }},
+        })
+    end
+
+    addon:RefreshCCFrames()
+end
+
+-- Show the add-marker menu (level 1: markers, level 2: CC types)
+local function ShowAddCCMenu(anchorFrame)
+    local function GetUsedMarkers()
+        local used = {}
+        local event = addon:GetCurrentEvent()
+        if event and event.ccAssignments then
+            for _, a in ipairs(event.ccAssignments) do
+                used[a.marker] = true
+            end
+        end
+        return used
+    end
+
+    UIDropDownMenu_Initialize(addCCDropdownFrame, function(_, level, menuList)
+        level = level or 1
+
+        if level == 1 then
+            local used = GetUsedMarkers()
+            for i = 1, 8 do
+                local info = UIDropDownMenu_CreateInfo()
+                local label = addon.MARKER_NAMES[i]
+                if used[i] then
+                    label = label .. " +"
+                end
+                info.text = "|T" .. addon.MARKER_ICONS[i] .. ":14|t " .. label
+                info.notCheckable = true
+                info.hasArrow = true
+                info.menuList = i
+                UIDropDownMenu_AddButton(info, level)
+            end
+        elseif level == 2 then
+            local markerIdx = menuList
+            -- Sort CC types alphabetically for consistency
+            local ccTypes = {}
+            for ccType, data in pairs(addon.CC_ABILITIES) do
+                if not data.soft and not data.aoe then
+                    tinsert(ccTypes, { id = ccType, data = data })
+                end
+            end
+            table.sort(ccTypes, function(a, b) return a.id < b.id end)
+
+            for _, entry in ipairs(ccTypes) do
+                local info = UIDropDownMenu_CreateInfo()
+                info.text = "|T" .. (entry.data.icon or "") .. ":14|t " .. entry.id
+                info.notCheckable = true
+                info.func = function()
+                    AddNewCCAssignment(markerIdx, entry.id)
+                    CloseDropDownMenus()
+                end
+                UIDropDownMenu_AddButton(info, level)
+            end
+        end
+    end, "MENU")
+
+    ToggleDropDownMenu(1, nil, addCCDropdownFrame, anchorFrame, 0, 0)
+end
+
+-- Ensure the "+ Add CC Assignment" button exists and is positioned
+local function EnsureAddButton(frame, rowCount)
+    if not frame.addBtn then
+        local btn = CreateFrame("Button", nil, frame.content, "UIPanelButtonTemplate")
+        btn:SetSize(160, ADD_BTN_HEIGHT)
+        btn:SetText("+ Add marker")
+        btn:SetScript("OnClick", function(self)
+            ShowAddCCMenu(self)
+        end)
+        frame.addBtn = btn
+    end
+
+    frame.addBtn:ClearAllPoints()
+    frame.addBtn:SetPoint("TOPLEFT", frame.content, "TOPLEFT", 0, -(rowCount * LEADER_ROW_HEIGHT + 4))
+    frame.addBtn:Show()
+end
+
+RefreshLeaderCCFrame = function()
     local frame = leaderFrame
     if not frame then return end
 
     local event = addon:GetCurrentEvent()
-    if not event or not event.ccAssignments then
-        HideExtraRows(frame, 1)
-        return
-    end
-
     local rowIdx = 0
 
-    for _, assignment in ipairs(event.ccAssignments) do
-        local markerName = addon.MARKER_NAMES[assignment.marker] or "?"
-        local markerIdx = assignment.marker
-        for _, cc in ipairs(assignment.assignments) do
-            rowIdx = rowIdx + 1
-            local row = GetLeaderRow(frame, rowIdx)
-            row.btn:SetNormalTexture(addon.MARKER_ICONS[markerIdx])
+    if event and event.ccAssignments then
+        for _, assignment in ipairs(event.ccAssignments) do
+            local markerName = addon.MARKER_NAMES[assignment.marker] or "?"
+            local markerIdx = assignment.marker
+            for cIdx, cc in ipairs(assignment.assignments) do
+                rowIdx = rowIdx + 1
+                local row = GetLeaderRow(frame, rowIdx)
+                row.btn:SetNormalTexture(addon.MARKER_ICONS[markerIdx])
 
-            -- Wire up click: mark target + whisper assigned player
-            local playerName = cc.playerName
-            local ccType = cc.ccType
-            row.btn:SetScript("OnClick", function()
-                -- Apply raid marker to current target
-                if UnitExists("target") then
-                    SetRaidTarget("target", markerIdx)
+                -- Wire click: mark target + whisper ALL players on this marker
+                local capturedMarkerAssignment = assignment
+                row.btn:SetScript("OnClick", function()
+                    if UnitExists("target") then
+                        SetRaidTarget("target", markerIdx)
+                    end
+                    local mobName = UnitExists("target") and UnitName("target") or nil
+                    for _, a in ipairs(capturedMarkerAssignment.assignments) do
+                        addon.CCManager:SendWhisper(a.playerName, markerIdx, mobName, a.ccType, true)
+                    end
+                end)
+
+                -- Marker name
+                row.markerLabel:SetText(markerName)
+
+                -- Player name with class colour or amber warning
+                local className = GetPlayerClass(cc.playerName)
+                local requiredClass = addon.CC_ABILITIES[cc.ccType] and addon.CC_ABILITIES[cc.ccType].class
+                local canDoCC = (requiredClass == nil) or (className == requiredClass)
+
+                if className and canDoCC then
+                    row.playerText:SetText(ClassColoredName(cc.playerName, className))
+                elseif className and not canDoCC then
+                    row.playerText:SetText("|cFFFF8800" .. cc.playerName .. "|r")
+                else
+                    row.playerText:SetText(cc.playerName)
                 end
-                -- Whisper the assigned player
-                local mobName = UnitExists("target") and UnitName("target") or nil
-                addon.CCManager:SendWhisper(playerName, markerIdx, mobName, ccType, true)
-            end)
 
-            local className = GetPlayerClass(cc.playerName)
-            local displayName = className and ClassColoredName(cc.playerName, className) or cc.playerName
-            row.text:SetText(markerName .. " \226\128\148 " .. displayName .. " (" .. cc.ccType .. ")")
+                -- Wire player dropdown
+                local capturedAssignment = assignment
+                local capturedCIdx = cIdx
+                row.playerBtn:SetScript("OnClick", function()
+                    ShowPlayerDropdown(row, capturedCIdx, capturedAssignment)
+                end)
+
+                -- CC type
+                row.ccLabel:SetText("(" .. cc.ccType .. ")")
+
+                -- Wire CC type dropdown
+                row.ccBtn:SetScript("OnClick", function()
+                    ShowCCTypeDropdown(row, capturedCIdx, capturedAssignment)
+                end)
+
+                -- Wire remove button
+                row.removeBtn:SetScript("OnClick", function()
+                    RemoveCCAssignment(capturedAssignment, capturedCIdx)
+                end)
+            end
         end
     end
 
     HideExtraRows(frame, rowIdx + 1)
+    EnsureAddButton(frame, rowIdx)
 
-    -- Auto-resize height to fit content
-    local newHeight = TITLE_HEIGHT + PADDING + math.max(rowIdx, 1) * ROW_HEIGHT + PADDING
+    -- Auto-resize: rows + add button + padding
+    local contentHeight = math.max(rowIdx, 0) * LEADER_ROW_HEIGHT + ADD_BTN_HEIGHT + 8
+    local newHeight = TITLE_HEIGHT + PADDING + contentHeight + PADDING
     frame:SetHeight(newHeight)
-
-    if rowIdx == 0 then
-        local row = GetLeaderRow(frame, 1)
-        row.btn:SetNormalTexture(nil)
-        row.btn:SetScript("OnClick", nil)
-        row.text:SetText("|cFF888888No CC assignments|r")
-        HideExtraRows(frame, 2)
-        frame:SetHeight(TITLE_HEIGHT + PADDING + ROW_HEIGHT + PADDING)
-    end
 end
 
 function addon:ToggleLeaderCCFrame()
@@ -337,6 +654,36 @@ end
 -- Refresh both frames (called after import, roster update, etc.)
 --------------------------------------------------------------------------------
 
+local function RefreshMyCCButton()
+    local btn = addon.tabButtons and addon.tabButtons["My CC"]
+    if not btn or not btn.markerIcon then
+        addon:Debug("My CC button: no button or markerIcon")
+        return
+    end
+
+    local event = addon:GetCurrentEvent()
+    if not event or not event.ccAssignments then
+        addon:Debug("My CC button: no event or ccAssignments")
+        btn.markerIcon:Hide()
+        return
+    end
+
+    local myName = UnitName("player")
+    addon:Debug("My CC button: looking for '" .. myName .. "' in " .. #event.ccAssignments .. " markers")
+    for _, assignment in ipairs(event.ccAssignments) do
+        for _, cc in ipairs(assignment.assignments) do
+            addon:Debug("  checking: '" .. cc.playerName .. "'")
+            if cc.playerName == myName then
+                btn.markerIcon:SetTexture(addon.MARKER_ICONS[assignment.marker])
+                btn.markerIcon:Show()
+                return
+            end
+        end
+    end
+
+    btn.markerIcon:Hide()
+end
+
 function addon:RefreshCCFrames()
     if playerFrame and playerFrame:IsShown() then
         RefreshPlayerCCFrame()
@@ -344,9 +691,15 @@ function addon:RefreshCCFrames()
     if leaderFrame and leaderFrame:IsShown() then
         RefreshLeaderCCFrame()
     end
+    RefreshMyCCButton()
 end
 
 -- Auto-refresh on group roster changes
 addon:RegisterModuleEvent("GROUP_ROSTER_UPDATE", function()
     addon:RefreshCCFrames()
+end)
+
+-- Refresh My CC button on login (picks up saved assignment data)
+addon:RegisterModuleEvent("PLAYER_LOGIN", function()
+    RefreshMyCCButton()
 end)

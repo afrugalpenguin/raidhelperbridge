@@ -45,27 +45,26 @@ function CCManager:GetAssignment(marker)
     return nil
 end
 
--- Get the appropriate CC for a mob type from an assignment
-function CCManager:GetCCForMobType(assignment, mobType)
+-- Get all matching CCs for a mob type from an assignment
+function CCManager:GetCCsForMobType(assignment, mobType)
     if not assignment or not assignment.assignments then
-        return nil
+        return {}
     end
-    
+
     -- Get valid CC types for this mob type
     local validCC = MOB_TYPE_CC[mobType] or {}
-    
-    -- Find first assignment that matches
+    local matches = {}
+
     for _, cc in ipairs(assignment.assignments) do
         for _, validType in ipairs(validCC) do
             if cc.ccType == validType then
-                return cc
+                tinsert(matches, cc)
+                break
             end
         end
     end
-    
-    -- No valid CC for this mob type, return first assignment anyway
-    -- (player will have to figure it out)
-    return assignment.assignments[1]
+
+    return matches
 end
 
 -- Send CC whisper to player
@@ -120,9 +119,9 @@ function CCManager:CheckUnit(unit)
     local mobType = UnitCreatureType(unit)
     local mobName = UnitName(unit)
     
-    -- Find appropriate CC
-    local cc = CCManager:GetCCForMobType(assignment, mobType)
-    if cc then
+    -- Whisper all players whose CC matches the mob type
+    local matches = CCManager:GetCCsForMobType(assignment, mobType)
+    for _, cc in ipairs(matches) do
         CCManager:SendWhisper(cc.playerName, marker, mobName, cc.ccType)
     end
 end
@@ -219,8 +218,7 @@ function addon:ToggleAutoWhisper()
     addon:Print("Auto-whisper: " .. (addon.charDb.autoWhisper and "ON" or "OFF"))
 end
 
--- Show CC editor (placeholder - would need full UI implementation)
+-- Show CC editor (opens the editable leader CC frame)
 function addon:ShowCCEditor()
-    addon:Print("CC Editor not yet implemented. Current assignments:")
-    addon:ShowCCAssignments()
+    addon:ToggleLeaderCCFrame()
 end
