@@ -263,21 +263,5 @@ Opens at `http://localhost:3000`. Fine for personal use — just run it when you
 
 ## TODO
 
-- [x] Raid-Helper API integration
-- [x] Bridge web app UI (event selector, name mapping, import string generator)
-- [x] CC assignment display frames (player + leader views)
-- [x] Minimap button with LDB positioning
-- [x] Character name mapping persistence (Discord name -> WoW name)
-- [x] Bridge CC rule builder UI
-- [x] Bridge group template builder UI
-- [x] Vitest test suite
-- [x] Vercel deployment
-- [x] In-game CC assignment editor (add/remove markers, change players and CC types)
-- [x] Multi-CC per marker (shared responsibility based on mob type)
-- [x] 10-man split raid mode
 - [ ] Full in-game group template editor UI (v2)
 - [ ] End-to-end in-game testing
-
-## License
-
-MIT
