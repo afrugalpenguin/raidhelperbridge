@@ -1,6 +1,4 @@
-# Raidr.gg
-
-It's a match. Now summon.
+# Raid Helper Bridge
 
 ## Overview
 
