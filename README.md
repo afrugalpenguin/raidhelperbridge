@@ -260,8 +260,3 @@ npm run dev
 ```
 
 Opens at `http://localhost:3000`. Fine for personal use — just run it when you need to generate an import string.
-
-## TODO
-
-- [ ] Full in-game group template editor UI (v2)
-- [ ] End-to-end in-game testing
