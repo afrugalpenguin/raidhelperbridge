@@ -159,24 +159,37 @@ This outputs an `!RHB!...` string you can paste into the addon's import dialog, 
 
 ## How CC Assignment Works
 
-The Bridge resolves generic rules like "1st Mage" into actual player names from the signup list:
+CC assignments are set up in the Bridge web app or edited directly in-game via the leader CC frame.
 
-```lua
--- Template rule: Square marker
-{ marker = 6, priority = {
-    { ccType = "polymorph", classOrder = 1 },  -- "1st Mage"
-    { ccType = "banish", classOrder = 1 },     -- "1st Warlock"
-}}
+### Multi-CC per marker
 
--- With signups: Castborn (Mage), Icyveins (Mage), Dotmaster (Warlock)
--- Resolves to: Square -> Castborn (polymorph), also CCs Dotmaster (banish)
+Multiple players can share responsibility for the same marker. Each player is assigned a CC type matching their class. When a mob gets marked, the addon checks the mob type and whispers **only the players whose CC is valid** for that mob.
+
+```
+Example: Star assigned to Castborn (polymorph), Dotmaster (banish), Backstab (sap)
+
+Humanoid gets Star → Castborn and Backstab both get whispered
+Demon gets Star    → only Dotmaster gets whispered (banish)
+Elemental gets Star → only Dotmaster gets whispered (banish)
+Mechanical gets Star → nobody whispered (no valid CC)
 ```
 
-When you mark a mob as Square in-game:
-1. Addon detects the raid marker
-2. Checks mob type (Humanoid, Demon, Undead, etc.)
-3. Finds a valid CC (Humanoid -> poly works, Demon -> poly doesn't, try banish)
-4. Whispers the assigned player: "CC {Square} - Moroes Guest"
+Players only need to act if they receive a whisper. If the mob isn't CC-able by their class, they ignore it.
+
+### In-game editing
+
+The leader CC frame supports full editing mid-raid:
+- **Click a player name** to reassign via dropdown (class-coloured, amber warning for mismatches)
+- **Click a CC type** to change it via dropdown
+- **Click X** to remove an assignment
+- **"+ Add marker"** to assign a new marker or add another player to an existing one
+- **Click the marker icon** to mark your target and whisper all assigned players at once
+
+A player can only be assigned to one marker at a time — reassigning them automatically removes the previous assignment.
+
+### My CC
+
+Each player sees their assigned marker icon on the "My CC" button in the tab menu, so they always know which marker is theirs.
 
 ## Import String Format
 
