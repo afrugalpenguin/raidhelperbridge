@@ -552,7 +552,7 @@ const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilde
   };
 
   return (
-    <section ref={ref} className={compact ? 'mb-2' : 'bg-gray-800 rounded-lg p-6 mb-6'}>
+    <section ref={ref} className={compact ? 'bg-gray-800 rounded-lg p-4 mb-4' : 'bg-gray-800 rounded-lg p-6 mb-6'}>
       {!compact && (
         <>
           <div className="flex items-center justify-between mb-1">
@@ -640,7 +640,7 @@ const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilde
       )}
 
       {/* Role count summary */}
-      {!compact && <div className="flex flex-wrap gap-4 mb-4 text-sm">
+      <div className="flex flex-wrap gap-4 mb-4 text-sm">
         {(['tank', 'healer', 'mdps', 'rdps', 'dps'] as RaidRole[])
           .map(role => {
             const count = confirmedRoster.filter(r => r.role === role).length;
@@ -655,7 +655,7 @@ const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilde
         <span className="text-gray-300">
           <span className="text-gray-500">Total:</span> {confirmedRoster.length}
         </span>
-      </div>}
+      </div>
 
       {/* Buff coverage summary */}
       {!hideBuffs && (
