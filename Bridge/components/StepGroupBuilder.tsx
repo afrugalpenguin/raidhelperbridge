@@ -13,6 +13,7 @@ interface Props {
   onChange: (groups: GroupAssignment[]) => void;
   eventId: string;
   initialBuffOverrides?: Set<string> | null;
+  hideBuffs?: boolean;  // Hide buff icons, optimiser, and buff warnings for 10-man mode
 }
 
 type DragSource = { groupIndex: number | 'pool'; playerName: string };
@@ -76,7 +77,7 @@ function decodeDrag(e: React.DragEvent): DragSource | null {
   }
 }
 
-const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilder({ roster, groups, onChange, eventId, initialBuffOverrides }, ref) {
+const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilder({ roster, groups, onChange, eventId, initialBuffOverrides, hideBuffs }, ref) {
   const [dropGroupTarget, setDropGroupTarget] = useState<number | 'pool' | null>(null);
   const [dropPlayerTarget, setDropPlayerTarget] = useState<string | null>(null);
   const [draggedPlayer, setDraggedPlayer] = useState<string | null>(null);
@@ -588,23 +589,27 @@ const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilde
           >
             Redo
           </button>
-          <button
-            onClick={handleShare}
-            className={`text-sm px-3 py-1 rounded border ${
-              shareStatus === 'copied'
-                ? 'text-green-400 border-green-600'
-                : 'text-gray-400 hover:text-white border-gray-600 hover:border-gray-400'
-            }`}
-          >
-            {shareStatus === 'copied' ? 'Copied!' : 'Share'}
-          </button>
-          <button
-            onClick={handleOptimize}
-            className="text-sm text-green-400 hover:text-green-300 px-3 py-1 rounded border border-green-700 hover:border-green-500"
-            title="Swap players between groups to maximise buff coverage"
-          >
-            Optimise
-          </button>
+          {!hideBuffs && (
+            <button
+              onClick={handleShare}
+              className={`text-sm px-3 py-1 rounded border ${
+                shareStatus === 'copied'
+                  ? 'text-green-400 border-green-600'
+                  : 'text-gray-400 hover:text-white border-gray-600 hover:border-gray-400'
+              }`}
+            >
+              {shareStatus === 'copied' ? 'Copied!' : 'Share'}
+            </button>
+          )}
+          {!hideBuffs && (
+            <button
+              onClick={handleOptimize}
+              className="text-sm text-green-400 hover:text-green-300 px-3 py-1 rounded border border-green-700 hover:border-green-500"
+              title="Swap players between groups to maximise buff coverage"
+            >
+              Optimise
+            </button>
+          )}
           <button
             onClick={handleSave}
             className="text-sm text-gray-400 hover:text-white px-3 py-1 rounded border border-gray-600 hover:border-gray-400"
@@ -642,33 +647,35 @@ const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilde
       </div>
 
       {/* Buff coverage summary */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        {BUFFS.map(buff => {
-          const covered = groups.filter(g => {
-            const auto = resolveGroupBuffs(g.players, roster, buffOverrides).find(b => b.buff.id === buff.id);
-            const autoActive = auto?.active ?? false;
-            const hasOverride = g.players.some(p => buffOverrides.has(`${p}_${buff.id}`));
-            return hasOverride ? !autoActive : autoActive;
-          }).length;
-          return (
-            <div
-              key={buff.id}
-              className={`flex items-center gap-1 ${covered > 0 ? '' : 'opacity-30 grayscale'}`}
-              title={`${buff.name}: ${covered}/${groups.length} groups`}
-            >
-              <img
-                src={`https://wow.zamimg.com/images/wow/icons/small/${buff.icon}.jpg`}
-                alt={buff.name}
-                className="w-4 h-4 rounded-sm"
-              />
-              <span className={`text-xs ${covered > 0 ? 'text-gray-300' : 'text-gray-600'}`}>{covered}</span>
-            </div>
-          );
-        })}
-      </div>
+      {!hideBuffs && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {BUFFS.map(buff => {
+            const covered = groups.filter(g => {
+              const auto = resolveGroupBuffs(g.players, roster, buffOverrides).find(b => b.buff.id === buff.id);
+              const autoActive = auto?.active ?? false;
+              const hasOverride = g.players.some(p => buffOverrides.has(`${p}_${buff.id}`));
+              return hasOverride ? !autoActive : autoActive;
+            }).length;
+            return (
+              <div
+                key={buff.id}
+                className={`flex items-center gap-1 ${covered > 0 ? '' : 'opacity-30 grayscale'}`}
+                title={`${buff.name}: ${covered}/${groups.length} groups`}
+              >
+                <img
+                  src={`https://wow.zamimg.com/images/wow/icons/small/${buff.icon}.jpg`}
+                  alt={buff.name}
+                  className="w-4 h-4 rounded-sm"
+                />
+                <span className={`text-xs ${covered > 0 ? 'text-gray-300' : 'text-gray-600'}`}>{covered}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Missing buff warnings */}
-      {(() => {
+      {!hideBuffs && (() => {
         // Compute which buffs are available raid-wide (at least one provider exists)
         const allPlayers = groups.flatMap(g => g.players);
         const raidBuffs = resolveGroupBuffs(allPlayers, roster, buffOverrides);
@@ -752,7 +759,7 @@ const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilde
               onDrop={onGroupDrop(gi)}
             >
               {/* Buff gain badge */}
-              {showBuffHint && (
+              {!hideBuffs && showBuffHint && (
                 <span className="absolute -top-2 -right-2 bg-green-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                   +{buffGain}
                 </span>
@@ -789,48 +796,50 @@ const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilde
               </div>
 
               {/* Buff icons */}
-              <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-gray-800">
-                {resolveGroupBuffs(group.players, roster, buffOverrides).map(({ buff, active: autoActive, provider }) => {
-                  const shown = getBuffActive(group.players, buff.id, autoActive);
-                  const overridden = isOverridden(group.players, buff.id);
-                  const popoverOpen = buffPopover?.groupIndex === gi && buffPopover?.buffId === buff.id;
-                  return (
-                    <div key={buff.id} className="relative">
-                      <img
-                        src={`https://wow.zamimg.com/images/wow/icons/small/${buff.icon}.jpg`}
-                        alt={buff.name}
-                        title={
-                          overridden
-                            ? `${buff.name} (manual${shown ? '' : ' — disabled'})`
-                            : shown ? `${buff.name} (${provider})` : `${buff.name} — missing`
-                        }
-                        onClick={() => handleBuffClick(gi, buff.id, provider, buff)}
-                        className={`w-4 h-4 rounded-sm cursor-pointer transition-all ${
-                          shown ? '' : 'opacity-25 grayscale'
-                        } ${overridden ? 'ring-1 ring-yellow-500/60' : ''}`}
-                      />
-                      {popoverOpen && (
-                        <div className="absolute bottom-6 left-0 bg-gray-800 border border-gray-600 rounded shadow-lg py-1 z-50 min-w-[120px]">
-                          <div className="text-xs text-gray-400 px-2 pb-1 border-b border-gray-700">{buff.name}</div>
-                          {buffPopover.candidates.map(name => {
-                            const cls = getPlayerClass(roster, name);
-                            return (
-                              <button
-                                key={name}
-                                onClick={() => { setOverride(name, buff.id, true); setBuffPopover(null); }}
-                                className="block w-full text-left px-2 py-1 text-sm hover:bg-gray-700"
-                                style={{ color: cls ? CLASS_COLORS[cls as keyof typeof CLASS_COLORS] : '#ccc' }}
-                              >
-                                {name}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+              {!hideBuffs && (
+                <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-gray-800">
+                  {resolveGroupBuffs(group.players, roster, buffOverrides).map(({ buff, active: autoActive, provider }) => {
+                    const shown = getBuffActive(group.players, buff.id, autoActive);
+                    const overridden = isOverridden(group.players, buff.id);
+                    const popoverOpen = buffPopover?.groupIndex === gi && buffPopover?.buffId === buff.id;
+                    return (
+                      <div key={buff.id} className="relative">
+                        <img
+                          src={`https://wow.zamimg.com/images/wow/icons/small/${buff.icon}.jpg`}
+                          alt={buff.name}
+                          title={
+                            overridden
+                              ? `${buff.name} (manual${shown ? '' : ' — disabled'})`
+                              : shown ? `${buff.name} (${provider})` : `${buff.name} — missing`
+                          }
+                          onClick={() => handleBuffClick(gi, buff.id, provider, buff)}
+                          className={`w-4 h-4 rounded-sm cursor-pointer transition-all ${
+                            shown ? '' : 'opacity-25 grayscale'
+                          } ${overridden ? 'ring-1 ring-yellow-500/60' : ''}`}
+                        />
+                        {popoverOpen && (
+                          <div className="absolute bottom-6 left-0 bg-gray-800 border border-gray-600 rounded shadow-lg py-1 z-50 min-w-[120px]">
+                            <div className="text-xs text-gray-400 px-2 pb-1 border-b border-gray-700">{buff.name}</div>
+                            {buffPopover.candidates.map(name => {
+                              const cls = getPlayerClass(roster, name);
+                              return (
+                                <button
+                                  key={name}
+                                  onClick={() => { setOverride(name, buff.id, true); setBuffPopover(null); }}
+                                  className="block w-full text-left px-2 py-1 text-sm hover:bg-gray-700"
+                                  style={{ color: cls ? CLASS_COLORS[cls as keyof typeof CLASS_COLORS] : '#ccc' }}
+                                >
+                                  {name}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         })}
