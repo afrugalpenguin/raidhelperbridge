@@ -33,6 +33,11 @@ export default function Home() {
   const [ccAssignments, setCCAssignments] = useState<CCAssignment[]>([]);
   const [groups, setGroups] = useState<GroupAssignment[]>([]);
   const [sharedBuffOverrides, setSharedBuffOverrides] = useState<Set<string> | null>(null);
+  const [raidMode, setRaidMode] = useState<'25-man' | '10-man-split'>('25-man');
+  const [raidSplits, setRaidSplits] = useState<[RosterEntry[], RosterEntry[]]>([[], []]);
+  const [raidCCAssignments, setRaidCCAssignments] = useState<[CCAssignment[], CCAssignment[]]>([[], []]);
+  const [raidGroups, setRaidGroups] = useState<[GroupAssignment[], GroupAssignment[]]>([[], []]);
+  const [activeRaidTab, setActiveRaidTab] = useState<0 | 1>(0);
 
   // Pending share payload — applied after event fetch completes
   const pendingShareRef = useRef<SharePayload | null>(null);
@@ -140,16 +145,60 @@ export default function Home() {
         {roster.length > 0 && (
           <>
             <StepMapNames roster={roster} onUpdateName={updateWowName} />
-            <StepCCRules roster={roster} assignments={ccAssignments} onChange={setCCAssignments} />
-            <StepGroupBuilder
-              ref={groupsRef}
-              roster={roster}
-              groups={groups}
-              onChange={setGroups}
-              eventId={event!.eventId}
-              initialBuffOverrides={sharedBuffOverrides}
-            />
-            <StepGenerateImport event={event!} roster={roster} ccAssignments={ccAssignments} groupAssignments={groups} />
+
+            {event && (
+              <div className="flex items-center justify-center gap-3 py-4">
+                <span className="text-sm text-zinc-400">Raid Mode:</span>
+                <button
+                  onClick={() => {
+                    setRaidMode('25-man');
+                    setRaidSplits([[], []]);
+                    setRaidCCAssignments([[], []]);
+                    setRaidGroups([[], []]);
+                  }}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    raidMode === '25-man'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                  }`}
+                >
+                  25-Man
+                </button>
+                <button
+                  onClick={() => {
+                    setRaidMode('10-man-split');
+                    setCCAssignments([]);
+                    setGroups([]);
+                  }}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    raidMode === '10-man-split'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                  }`}
+                >
+                  10-Man Split
+                </button>
+              </div>
+            )}
+
+            {raidMode === '25-man' && (
+              <>
+                <StepCCRules roster={roster} assignments={ccAssignments} onChange={setCCAssignments} />
+                <StepGroupBuilder
+                  ref={groupsRef}
+                  roster={roster}
+                  groups={groups}
+                  onChange={setGroups}
+                  eventId={event!.eventId}
+                  initialBuffOverrides={sharedBuffOverrides}
+                />
+                <StepGenerateImport event={event!} roster={roster} ccAssignments={ccAssignments} groupAssignments={groups} />
+              </>
+            )}
+
+            {raidMode === '10-man-split' && event && (
+              <div className="text-zinc-400 text-center py-8">Split UI placeholder</div>
+            )}
           </>
         )}
       </div>
