@@ -15,7 +15,7 @@ import StepCCRules from '@/components/StepCCRules';
 import StepGroupBuilder from '@/components/StepGroupBuilder';
 import StepGenerateImport from '@/components/StepGenerateImport';
 import StepSplitRaids from '@/components/StepSplitRaids';
-import RaidPanel from '@/components/RaidPanel';
+import DualRaidView from '@/components/DualRaidView';
 
 function extractEventId(input: string): string | null {
   const trimmed = input.trim();
@@ -39,8 +39,6 @@ export default function Home() {
   const [raidSplits, setRaidSplits] = useState<[RosterEntry[], RosterEntry[]]>([[], []]);
   const [raidCCAssignments, setRaidCCAssignments] = useState<[CCAssignment[], CCAssignment[]]>([[], []]);
   const [raidGroups, setRaidGroups] = useState<[GroupAssignment[], GroupAssignment[]]>([[], []]);
-  const [activeRaidTab, setActiveRaidTab] = useState<0 | 1>(0);
-
   // Pending share payload — applied after event fetch completes
   const pendingShareRef = useRef<SharePayload | null>(null);
   const groupsRef = useRef<HTMLElement | null>(null);
@@ -153,7 +151,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
+      <div className={`mx-auto ${raidMode === '10-man-split' ? 'max-w-7xl' : 'max-w-4xl'}`}>
         <h1 className="text-3xl font-bold mb-1">Raid Helper Bridge</h1>
         <p className="text-gray-400 mb-8">Import Raid-Helper signups into the Raid Helper Bridge WoW addon</p>
 
@@ -231,41 +229,15 @@ export default function Home() {
                 />
 
                 {(raidSplits[0].length > 0 || raidSplits[1].length > 0) && (
-                  <div className="mt-6">
-                    <div className="flex gap-2 mb-4">
-                      {([0, 1] as const).map(i => (
-                        <button
-                          key={i}
-                          onClick={() => setActiveRaidTab(i)}
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                            activeRaidTab === i
-                              ? 'bg-indigo-600 text-white'
-                              : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
-                          }`}
-                        >
-                          Raid {i + 1} ({raidSplits[i].length})
-                        </button>
-                      ))}
-                    </div>
-
-                    <RaidPanel
-                      raidLabel={`Raid ${activeRaidTab + 1}`}
-                      event={event}
-                      roster={raidSplits[activeRaidTab]}
-                      ccAssignments={raidCCAssignments[activeRaidTab]}
-                      onCCChange={(assignments) => {
-                        const updated = [...raidCCAssignments] as [CCAssignment[], CCAssignment[]];
-                        updated[activeRaidTab] = assignments;
-                        setRaidCCAssignments(updated);
-                      }}
-                      groups={raidGroups[activeRaidTab]}
-                      onGroupsChange={(newGroups) => {
-                        const updated = [...raidGroups] as [GroupAssignment[], GroupAssignment[]];
-                        updated[activeRaidTab] = newGroups;
-                        setRaidGroups(updated);
-                      }}
-                    />
-                  </div>
+                  <DualRaidView
+                    event={event}
+                    splits={raidSplits}
+                    onSplitsChange={setRaidSplits}
+                    ccAssignments={raidCCAssignments}
+                    onCCChange={setRaidCCAssignments}
+                    groups={raidGroups}
+                    onGroupsChange={setRaidGroups}
+                  />
                 )}
               </>
             )}
