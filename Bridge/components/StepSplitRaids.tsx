@@ -130,6 +130,7 @@ export default function StepSplitRaids({ roster, splits, onChange }: Props) {
   ) {
     const group1 = players.slice(0, 5);
     const group2 = players.slice(5, 10);
+    const overflow = players.slice(10);
 
     return (
       <div
@@ -138,7 +139,7 @@ export default function StepSplitRaids({ roster, splits, onChange }: Props) {
         onDrop={e => { e.preventDefault(); onDrop(); }}
       >
         <h3 className="text-sm font-semibold text-zinc-300 mb-2">
-          {title} ({players.length})
+          {title} ({players.length}{players.length > 10 ? ' — too many!' : ''})
         </h3>
         <div className="space-y-3 min-h-[100px] p-2 rounded-lg border border-zinc-700 bg-zinc-900/50">
           {players.length === 0 ? (
@@ -175,10 +176,26 @@ export default function StepSplitRaids({ roster, splits, onChange }: Props) {
                   ))}
                 </div>
               </div>
+              {overflow.length > 0 && (
+                <div className="border-t border-amber-700 pt-2">
+                  <div className="text-xs text-amber-500 mb-1">Overflow — not grouped ({overflow.length})</div>
+                  <div className="space-y-1">
+                    {overflow.map(entry => (
+                      <PlayerCard
+                        key={entry.discordId}
+                        entry={entry}
+                        onClick={() => onPlayerClick(entry)}
+                        draggable
+                        onDragStart={() => setDraggedId(entry.discordId)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
-        {players.length > 0 && <RoleSummary players={players} />}
+        {players.length > 0 && <RoleSummary players={players.slice(0, 10)} />}
       </div>
     );
   }

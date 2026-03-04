@@ -129,9 +129,10 @@ export default function Home() {
       const raidRoster = raidSplits[i];
       if (raidRoster.length > 0) {
         // Strip groupNumber so autoAssignGroups uses sequential (2 groups of 5)
-        // instead of the original 25-man raidplan groupings
-        const stripped = raidRoster.map(r => ({ ...r, groupNumber: undefined }));
-        newCC[i] = autoResolveCC(stripped);
+        // instead of the original 25-man raidplan groupings.
+        // Cap at 10 players — extras stay unassigned in the group builder.
+        const stripped = raidRoster.slice(0, 10).map(r => ({ ...r, groupNumber: undefined }));
+        newCC[i] = autoResolveCC(raidRoster);
         newGroups[i] = autoAssignGroups(stripped);
       }
     }
