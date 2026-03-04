@@ -176,6 +176,8 @@ export default function Home() {
                     setRaidSplits([[], []]);
                     setRaidCCAssignments([[], []]);
                     setRaidGroups([[], []]);
+                    setCCAssignments(autoResolveCC(roster));
+                    setGroups(autoAssignGroups(roster));
                   }}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     raidMode === '25-man'
