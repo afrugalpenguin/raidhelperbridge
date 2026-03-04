@@ -63,6 +63,7 @@ export default function DualRaidView({
             onChange={(g) => onGroupsChange([g, groups[1]])}
             eventId={event.eventId}
             hideBuffs
+            compact
             selectedPlayer={selected1}
             onPlayerSelect={(name) => setSelected1(selected1 === name ? null : name)}
           />
@@ -92,6 +93,7 @@ export default function DualRaidView({
             onChange={(g) => onGroupsChange([groups[0], g])}
             eventId={event.eventId}
             hideBuffs
+            compact
             selectedPlayer={selected2}
             onPlayerSelect={(name) => setSelected2(selected2 === name ? null : name)}
           />

@@ -14,6 +14,7 @@ interface Props {
   eventId: string;
   initialBuffOverrides?: Set<string> | null;
   hideBuffs?: boolean;  // Hide buff icons, optimiser, and buff warnings for 10-man mode
+  compact?: boolean;    // Compact layout for 10-man split (no toolbar chrome, 2-col grid)
   selectedPlayer?: string | null;
   onPlayerSelect?: (name: string) => void;
 }
@@ -79,7 +80,7 @@ function decodeDrag(e: React.DragEvent): DragSource | null {
   }
 }
 
-const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilder({ roster, groups, onChange, eventId, initialBuffOverrides, hideBuffs, selectedPlayer, onPlayerSelect }, ref) {
+const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilder({ roster, groups, onChange, eventId, initialBuffOverrides, hideBuffs, compact, selectedPlayer, onPlayerSelect }, ref) {
   const [dropGroupTarget, setDropGroupTarget] = useState<number | 'pool' | null>(null);
   const [dropPlayerTarget, setDropPlayerTarget] = useState<string | null>(null);
   const [draggedPlayer, setDraggedPlayer] = useState<string | null>(null);
@@ -551,91 +552,95 @@ const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilde
   };
 
   return (
-    <section ref={ref} className="bg-gray-800 rounded-lg p-6 mb-6">
-      <div className="flex items-center justify-between mb-1">
-        <h2 className="text-lg font-semibold">3. Raid Groups</h2>
-        <div className="flex items-center gap-2">
-          {savedTemplates.length > 0 && (
-            <div className="flex items-center gap-1">
-              <select
-                defaultValue=""
-                onChange={(e) => { handleLoad(e.target.value); e.target.value = ''; }}
-                className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500"
-              >
-                <option value="" disabled>Load template...</option>
-                {savedTemplates.map(t => (
-                  <option key={t.name} value={t.name}>{t.name}</option>
-                ))}
-              </select>
+    <section ref={ref} className={compact ? 'mb-2' : 'bg-gray-800 rounded-lg p-6 mb-6'}>
+      {!compact && (
+        <>
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-lg font-semibold">3. Raid Groups</h2>
+            <div className="flex items-center gap-2">
+              {savedTemplates.length > 0 && (
+                <div className="flex items-center gap-1">
+                  <select
+                    defaultValue=""
+                    onChange={(e) => { handleLoad(e.target.value); e.target.value = ''; }}
+                    className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="" disabled>Load template...</option>
+                    {savedTemplates.map(t => (
+                      <option key={t.name} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => {
+                      const name = prompt('Delete which template?\n\n' + savedTemplates.map(t => t.name).join('\n'));
+                      if (name) handleDelete(name);
+                    }}
+                    className="text-gray-500 hover:text-red-400 text-sm px-1"
+                    title="Delete a template"
+                  >
+                    x
+                  </button>
+                </div>
+              )}
               <button
-                onClick={() => {
-                  const name = prompt('Delete which template?\n\n' + savedTemplates.map(t => t.name).join('\n'));
-                  if (name) handleDelete(name);
-                }}
-                className="text-gray-500 hover:text-red-400 text-sm px-1"
-                title="Delete a template"
+                onClick={undo}
+                disabled={!canUndo}
+                className="text-sm text-gray-400 hover:text-white px-2 py-1 rounded border border-gray-600 hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Undo (Ctrl+Z)"
               >
-                x
+                Undo
+              </button>
+              <button
+                onClick={redo}
+                disabled={!canRedo}
+                className="text-sm text-gray-400 hover:text-white px-2 py-1 rounded border border-gray-600 hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Redo (Ctrl+Y)"
+              >
+                Redo
+              </button>
+              {!hideBuffs && (
+                <button
+                  onClick={handleShare}
+                  className={`text-sm px-3 py-1 rounded border ${
+                    shareStatus === 'copied'
+                      ? 'text-green-400 border-green-600'
+                      : 'text-gray-400 hover:text-white border-gray-600 hover:border-gray-400'
+                  }`}
+                >
+                  {shareStatus === 'copied' ? 'Copied!' : 'Share'}
+                </button>
+              )}
+              {!hideBuffs && (
+                <button
+                  onClick={handleOptimize}
+                  className="text-sm text-green-400 hover:text-green-300 px-3 py-1 rounded border border-green-700 hover:border-green-500"
+                  title="Swap players between groups to maximise buff coverage"
+                >
+                  Optimise
+                </button>
+              )}
+              <button
+                onClick={handleSave}
+                className="text-sm text-gray-400 hover:text-white px-3 py-1 rounded border border-gray-600 hover:border-gray-400"
+              >
+                Save
+              </button>
+              <button
+                onClick={handleReset}
+                className="text-sm text-gray-400 hover:text-white px-3 py-1 rounded border border-gray-600 hover:border-gray-400"
+              >
+                Reset
               </button>
             </div>
-          )}
-          <button
-            onClick={undo}
-            disabled={!canUndo}
-            className="text-sm text-gray-400 hover:text-white px-2 py-1 rounded border border-gray-600 hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed"
-            title="Undo (Ctrl+Z)"
-          >
-            Undo
-          </button>
-          <button
-            onClick={redo}
-            disabled={!canRedo}
-            className="text-sm text-gray-400 hover:text-white px-2 py-1 rounded border border-gray-600 hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed"
-            title="Redo (Ctrl+Y)"
-          >
-            Redo
-          </button>
-          {!hideBuffs && (
-            <button
-              onClick={handleShare}
-              className={`text-sm px-3 py-1 rounded border ${
-                shareStatus === 'copied'
-                  ? 'text-green-400 border-green-600'
-                  : 'text-gray-400 hover:text-white border-gray-600 hover:border-gray-400'
-              }`}
-            >
-              {shareStatus === 'copied' ? 'Copied!' : 'Share'}
-            </button>
-          )}
-          {!hideBuffs && (
-            <button
-              onClick={handleOptimize}
-              className="text-sm text-green-400 hover:text-green-300 px-3 py-1 rounded border border-green-700 hover:border-green-500"
-              title="Swap players between groups to maximise buff coverage"
-            >
-              Optimise
-            </button>
-          )}
-          <button
-            onClick={handleSave}
-            className="text-sm text-gray-400 hover:text-white px-3 py-1 rounded border border-gray-600 hover:border-gray-400"
-          >
-            Save
-          </button>
-          <button
-            onClick={handleReset}
-            className="text-sm text-gray-400 hover:text-white px-3 py-1 rounded border border-gray-600 hover:border-gray-400"
-          >
-            Reset
-          </button>
-        </div>
-      </div>
-      <p className="text-gray-400 text-sm mb-4">
-        Drag to a group to move, or onto a player to swap.
-      </p>
+          </div>
+          <p className="text-gray-400 text-sm mb-4">
+            Drag to a group to move, or onto a player to swap.
+          </p>
+        </>
+      )}
 
       {/* Role count summary */}
-      <div className="flex flex-wrap gap-4 mb-4 text-sm">
+      {!compact && <div className="flex flex-wrap gap-4 mb-4 text-sm">
         {(['tank', 'healer', 'mdps', 'rdps', 'dps'] as RaidRole[])
           .map(role => {
             const count = confirmedRoster.filter(r => r.role === role).length;
@@ -650,7 +655,7 @@ const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilde
         <span className="text-gray-300">
           <span className="text-gray-500">Total:</span> {confirmedRoster.length}
         </span>
-      </div>
+      </div>}
 
       {/* Buff coverage summary */}
       {!hideBuffs && (
@@ -745,7 +750,7 @@ const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilde
       })()}
 
       {/* Group cards grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+      <div className={`grid gap-3 mb-4 ${compact ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
         {groups.map((group, gi) => {
           const isOver = dropGroupTarget === gi && !dropPlayerTarget;
           const overLimit = group.players.length > 5;
@@ -852,7 +857,7 @@ const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilde
       </div>
 
       {/* Pool boxes: Unassigned, Tentative, Other */}
-      {(unassigned.length > 0 || tentative.length > 0 || other.length > 0) && (
+      {!compact && (unassigned.length > 0 || tentative.length > 0 || other.length > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[
             { label: 'Unassigned', players: unassigned },
