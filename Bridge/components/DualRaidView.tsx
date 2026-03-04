@@ -69,7 +69,7 @@ export default function DualRaidView({
         </div>
 
         {bothHavePlayers && (
-          <div className="flex items-center pt-24 shrink-0">
+          <div className="flex items-center self-center shrink-0">
             <button
               disabled={!canSwap}
               onClick={swapPlayers}
