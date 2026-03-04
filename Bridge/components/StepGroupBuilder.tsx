@@ -14,6 +14,8 @@ interface Props {
   eventId: string;
   initialBuffOverrides?: Set<string> | null;
   hideBuffs?: boolean;  // Hide buff icons, optimiser, and buff warnings for 10-man mode
+  selectedPlayer?: string | null;
+  onPlayerSelect?: (name: string) => void;
 }
 
 type DragSource = { groupIndex: number | 'pool'; playerName: string };
@@ -77,7 +79,7 @@ function decodeDrag(e: React.DragEvent): DragSource | null {
   }
 }
 
-const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilder({ roster, groups, onChange, eventId, initialBuffOverrides, hideBuffs }, ref) {
+const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilder({ roster, groups, onChange, eventId, initialBuffOverrides, hideBuffs, selectedPlayer, onPlayerSelect }, ref) {
   const [dropGroupTarget, setDropGroupTarget] = useState<number | 'pool' | null>(null);
   const [dropPlayerTarget, setDropPlayerTarget] = useState<string | null>(null);
   const [draggedPlayer, setDraggedPlayer] = useState<string | null>(null);
@@ -514,6 +516,7 @@ const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilde
     // Highlight the dragged player too when hovering over a swap target
     const isSwapSource = isDragging && dropPlayerTarget !== null;
     const highlighted = isSwapTarget || isSwapSource;
+    const isSelected = selectedPlayer === name;
 
     return (
       <div
@@ -524,10 +527,13 @@ const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilde
         onDragOver={onPlayerDragOver(groupIndex, name)}
         onDragLeave={onPlayerDragLeave}
         onDrop={onPlayerDrop(groupIndex, name)}
+        onClick={onPlayerSelect ? () => onPlayerSelect(name) : undefined}
         className={`flex items-center gap-2 px-2 py-1 rounded text-sm cursor-grab active:cursor-grabbing transition-all ${
-          highlighted
-            ? 'bg-blue-600/30 ring-1 ring-blue-500'
-            : 'bg-gray-800 hover:bg-gray-700'
+          isSelected
+            ? 'bg-indigo-600/30 ring-1 ring-indigo-500'
+            : highlighted
+              ? 'bg-blue-600/30 ring-1 ring-blue-500'
+              : 'bg-gray-800 hover:bg-gray-700'
         } ${isDragging && !isSwapSource ? 'opacity-40' : ''}`}
       >
         <span
@@ -547,7 +553,7 @@ const StepGroupBuilder = forwardRef<HTMLElement, Props>(function StepGroupBuilde
   return (
     <section ref={ref} className="bg-gray-800 rounded-lg p-6 mb-6">
       <div className="flex items-center justify-between mb-1">
-        <h2 className="text-lg font-semibold">4. Raid Groups</h2>
+        <h2 className="text-lg font-semibold">3. Raid Groups</h2>
         <div className="flex items-center gap-2">
           {savedTemplates.length > 0 && (
             <div className="flex items-center gap-1">

@@ -208,7 +208,6 @@ export default function Home() {
 
             {raidMode === '25-man' && (
               <>
-                <StepCCRules roster={roster} assignments={ccAssignments} onChange={setCCAssignments} />
                 <StepGroupBuilder
                   ref={groupsRef}
                   roster={roster}
@@ -217,6 +216,7 @@ export default function Home() {
                   eventId={event!.eventId}
                   initialBuffOverrides={sharedBuffOverrides}
                 />
+                <StepCCRules roster={roster} assignments={ccAssignments} onChange={setCCAssignments} />
                 <StepGenerateImport event={event!} roster={roster} ccAssignments={ccAssignments} groupAssignments={groups} />
               </>
             )}

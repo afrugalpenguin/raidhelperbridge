@@ -121,7 +121,7 @@ export default function StepCCRules({ roster, assignments, onChange }: Props) {
   return (
     <section className="bg-gray-800 rounded-lg p-6 mb-6">
       <div className="flex items-center justify-between mb-1">
-        <h2 className="text-lg font-semibold">3. CC Assignments</h2>
+        <h2 className="text-lg font-semibold">4. CC Assignments</h2>
         <button
           onClick={handleAutoAssign}
           className="text-sm bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded"
