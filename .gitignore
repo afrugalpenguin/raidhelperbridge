@@ -22,6 +22,9 @@ Bridge/next-env.d.ts
 .claude/
 CLAUDE.md
 
+# Documentation / plans
+docs/
+
 # OS
 Thumbs.db
 Desktop.ini
