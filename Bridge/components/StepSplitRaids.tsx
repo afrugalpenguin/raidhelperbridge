@@ -122,12 +122,72 @@ export default function StepSplitRaids({ roster, splits, onChange }: Props) {
     setDraggedId(null);
   }
 
-  function renderColumn(
+  function renderRaidColumn(
     title: string,
     players: RosterEntry[],
     onPlayerClick: (entry: RosterEntry) => void,
     onDrop: () => void,
-    showSummary: boolean,
+  ) {
+    const group1 = players.slice(0, 5);
+    const group2 = players.slice(5, 10);
+
+    return (
+      <div
+        className="flex-1 min-w-[200px]"
+        onDragOver={e => e.preventDefault()}
+        onDrop={e => { e.preventDefault(); onDrop(); }}
+      >
+        <h3 className="text-sm font-semibold text-zinc-300 mb-2">
+          {title} ({players.length})
+        </h3>
+        <div className="space-y-3 min-h-[100px] p-2 rounded-lg border border-zinc-700 bg-zinc-900/50">
+          {players.length === 0 ? (
+            <div className="text-xs text-zinc-600 text-center py-4">
+              Drop players here
+            </div>
+          ) : (
+            <>
+              <div>
+                <div className="text-xs text-zinc-500 mb-1">Group 1 ({group1.length}/5)</div>
+                <div className="space-y-1">
+                  {group1.map(entry => (
+                    <PlayerCard
+                      key={entry.discordId}
+                      entry={entry}
+                      onClick={() => onPlayerClick(entry)}
+                      draggable
+                      onDragStart={() => setDraggedId(entry.discordId)}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="border-t border-zinc-700 pt-2">
+                <div className="text-xs text-zinc-500 mb-1">Group 2 ({group2.length}/5)</div>
+                <div className="space-y-1">
+                  {group2.map(entry => (
+                    <PlayerCard
+                      key={entry.discordId}
+                      entry={entry}
+                      onClick={() => onPlayerClick(entry)}
+                      draggable
+                      onDragStart={() => setDraggedId(entry.discordId)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+        {players.length > 0 && <RoleSummary players={players} />}
+      </div>
+    );
+  }
+
+  function renderPoolColumn(
+    title: string,
+    players: RosterEntry[],
+    onPlayerClick: (entry: RosterEntry) => void,
+    onDrop: () => void,
   ) {
     return (
       <div
@@ -154,7 +214,6 @@ export default function StepSplitRaids({ roster, splits, onChange }: Props) {
             </div>
           )}
         </div>
-        {showSummary && players.length > 0 && <RoleSummary players={players} />}
       </div>
     );
   }
@@ -163,26 +222,23 @@ export default function StepSplitRaids({ roster, splits, onChange }: Props) {
     <section>
       <h2 className="text-lg font-bold text-white mb-4">Split into Raids</h2>
       <div className="flex gap-4">
-        {renderColumn(
+        {renderRaidColumn(
           'Raid 1',
           splits[0],
           unassignPlayer,
           () => handleDrop(0),
-          true,
         )}
-        {renderColumn(
+        {renderPoolColumn(
           'Unassigned',
           unassigned,
           handleUnassignedClick,
           handleDropUnassigned,
-          false,
         )}
-        {renderColumn(
+        {renderRaidColumn(
           'Raid 2',
           splits[1],
           unassignPlayer,
           () => handleDrop(1),
-          true,
         )}
       </div>
     </section>
