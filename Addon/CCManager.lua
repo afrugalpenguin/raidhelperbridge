@@ -69,8 +69,8 @@ function CCManager:GetCCForMobType(assignment, mobType)
 end
 
 -- Send CC whisper to player
-function CCManager:SendWhisper(playerName, marker, mobName, ccType)
-    if not addon.charDb.autoWhisper then
+function CCManager:SendWhisper(playerName, marker, mobName, ccType, force)
+    if not force and not addon.charDb.autoWhisper then
         return
     end
     

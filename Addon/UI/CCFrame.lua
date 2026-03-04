@@ -133,6 +133,44 @@ local function HideExtraRows(frame, startIndex)
     end
 end
 
+-- Leader-specific: create or reuse a row with a clickable marker button
+local function GetLeaderRow(frame, index)
+    if frame.rows[index] then
+        frame.rows[index]:Show()
+        return frame.rows[index]
+    end
+
+    local row = CreateFrame("Frame", nil, frame.content)
+    row:SetHeight(ROW_HEIGHT)
+    row:SetPoint("TOPLEFT", frame.content, "TOPLEFT", 0, -((index - 1) * ROW_HEIGHT))
+    row:SetPoint("RIGHT", frame.content, "RIGHT", 0, 0)
+
+    -- Clickable marker button instead of static texture
+    local btn = CreateFrame("Button", nil, row)
+    btn:SetSize(ICON_SIZE, ICON_SIZE)
+    btn:SetPoint("LEFT", row, "LEFT", 0, 0)
+    btn:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+    btn:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Click to mark target and whisper")
+        GameTooltip:Show()
+    end)
+    btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    row.btn = btn
+
+    -- Keep icon ref for compatibility with HideExtraRows pattern
+    row.icon = btn
+
+    local text = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    text:SetPoint("LEFT", btn, "RIGHT", 6, 0)
+    text:SetPoint("RIGHT", row, "RIGHT", 0, 0)
+    text:SetJustifyH("LEFT")
+    row.text = text
+
+    frame.rows[index] = row
+    return row
+end
+
 -- Format class-colored player name
 local function ClassColoredName(playerName, className)
     local color = addon.CLASS_COLORS[className]
@@ -244,10 +282,24 @@ local function RefreshLeaderCCFrame()
 
     for _, assignment in ipairs(event.ccAssignments) do
         local markerName = addon.MARKER_NAMES[assignment.marker] or "?"
+        local markerIdx = assignment.marker
         for _, cc in ipairs(assignment.assignments) do
             rowIdx = rowIdx + 1
-            local row = GetRow(frame, rowIdx)
-            row.icon:SetTexture(addon.MARKER_ICONS[assignment.marker])
+            local row = GetLeaderRow(frame, rowIdx)
+            row.btn:SetNormalTexture(addon.MARKER_ICONS[markerIdx])
+
+            -- Wire up click: mark target + whisper assigned player
+            local playerName = cc.playerName
+            local ccType = cc.ccType
+            row.btn:SetScript("OnClick", function()
+                -- Apply raid marker to current target
+                if UnitExists("target") then
+                    SetRaidTarget("target", markerIdx)
+                end
+                -- Whisper the assigned player
+                local mobName = UnitExists("target") and UnitName("target") or nil
+                addon.CCManager:SendWhisper(playerName, markerIdx, mobName, ccType, true)
+            end)
 
             local className = GetPlayerClass(cc.playerName)
             local displayName = className and ClassColoredName(cc.playerName, className) or cc.playerName
@@ -262,8 +314,9 @@ local function RefreshLeaderCCFrame()
     frame:SetHeight(newHeight)
 
     if rowIdx == 0 then
-        local row = GetRow(frame, 1)
-        row.icon:SetTexture(nil)
+        local row = GetLeaderRow(frame, 1)
+        row.btn:SetNormalTexture(nil)
+        row.btn:SetScript("OnClick", nil)
         row.text:SetText("|cFF888888No CC assignments|r")
         HideExtraRows(frame, 2)
         frame:SetHeight(TITLE_HEIGHT + PADDING + ROW_HEIGHT + PADDING)
