@@ -1,5 +1,16 @@
 # Changelog
 
+**v1.2.0**
+
+- In-game editable CC assignments — change player, CC type, add/remove markers directly in the leader CC frame
+- Multi-CC per marker — assign multiple players to the same marker; each gets whispered only if their CC matches the mob type
+- My CC tab button shows your assigned marker icon inline (no popup)
+- 10-man split raid mode — split 25-man rosters into two 10-man raids with drag-and-drop, click-to-assign, and player swap
+- Side-by-side dual raid view with independent groups, CC, and import generation per raid
+- Tutorial highlights specific tab menu buttons during walkthrough
+- Bridge: reorder steps (groups before CC), compact group layout in split view
+- TOC interface bumped to 20505 (TBC Anniversary 2.5.5)
+
 **v1.1.0**
 
 - Tutorial walkthrough system — interactive step-by-step guide for new users covering import, groups, CC, and invite features
